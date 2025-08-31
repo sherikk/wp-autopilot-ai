@@ -5,96 +5,72 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, TrendingUp, Users, Eye, Clock, Download } from "lucide-react";
+import { usePosts } from "@/hooks/usePosts";
+import { useWordPressSites } from "@/hooks/useWordPressSites";
 
 const Analytics = () => {
   const [selectedTab, setSelectedTab] = useState("analytics");
   const [timeRange, setTimeRange] = useState("30d");
-
+  
+  const { posts } = usePosts();
+  const { sites } = useWordPressSites();
+  
+  // Calculate real stats from data
+  const publishedPosts = posts.filter(p => p.status === 'published');
+  const scheduledPosts = posts.filter(p => p.status === 'scheduled');
+  
   const stats = [
     {
       title: "Total Posts Published",
-      value: "247",
-      change: "+12%",
-      trend: "up",
+      value: publishedPosts.length.toString(),
+      change: "Real data",
+      trend: "up" as const,
       icon: BarChart3
     },
     {
-      title: "Total Page Views",
-      value: "156.2K",
-      change: "+8.3%",
-      trend: "up",
+      title: "Connected Sites",
+      value: sites.length.toString(),
+      change: "Active sites",
+      trend: "up" as const,
       icon: Eye
     },
     {
-      title: "Avg. Reading Time",
-      value: "3m 42s",
-      change: "+0.2m",
-      trend: "up",
+      title: "Scheduled Posts",
+      value: scheduledPosts.length.toString(),
+      change: "Upcoming",
+      trend: "up" as const,
       icon: Clock
     },
     {
-      title: "Engagement Rate",
-      value: "4.2%",
-      change: "-0.1%",
-      trend: "down",
+      title: "Draft Posts",
+      value: posts.filter(p => p.status === 'draft').length.toString(),
+      change: "In progress",
+      trend: "up" as const,
       icon: Users
     }
   ];
 
-  const topPosts = [
-    {
-      title: "The Complete Guide to WordPress SEO",
-      site: "TechBlog.com",
-      views: 15420,
-      engagement: "5.8%",
-      publishedAt: "2024-01-10"
-    },
-    {
-      title: "10 Morning Habits That Changed My Life",
-      site: "LifestyleMag.net",
-      views: 12350,
-      engagement: "7.2%",
-      publishedAt: "2024-01-08"
-    },
-    {
-      title: "Digital Marketing ROI: How to Measure Success",
-      site: "BusinessHub.co",
-      views: 9870,
-      engagement: "4.1%",
-      publishedAt: "2024-01-12"
-    },
-    {
-      title: "Best WordPress Themes for 2024",
-      site: "TechBlog.com",
-      views: 8650,
-      engagement: "6.3%",
-      publishedAt: "2024-01-15"
-    }
-  ];
+  // Get recent posts for top performing section
+  const recentPublished = publishedPosts
+    .slice(0, 4)
+    .map(post => ({
+      title: post.title,
+      site: post.wordpress_sites?.name || 'Unknown Site',
+      publishedAt: new Date(post.published_at || post.created_at).toLocaleDateString(),
+      category: post.category_name || 'Uncategorized'
+    }));
 
-  const sitePerformance = [
-    {
-      site: "TechBlog.com",
-      posts: 89,
-      views: "67.2K",
-      avgEngagement: "5.4%",
-      topCategory: "WordPress"
-    },
-    {
-      site: "LifestyleMag.net",
-      posts: 67,
-      views: "45.8K",
-      avgEngagement: "6.1%",
-      topCategory: "Health"
-    },
-    {
-      site: "BusinessHub.co",
-      posts: 91,
-      views: "43.2K",
-      avgEngagement: "4.7%",
-      topCategory: "Marketing"
-    }
-  ];
+  // Group posts by site
+  const siteGroups = sites.map(site => {
+    const sitePosts = posts.filter(p => p.wordpress_sites?.url === site.url);
+    return {
+      site: site.name,
+      posts: sitePosts.length,
+      published: sitePosts.filter(p => p.status === 'published').length,
+      scheduled: sitePosts.filter(p => p.status === 'scheduled').length,
+      drafts: sitePosts.filter(p => p.status === 'draft').length
+    };
+  });
 
   return (
     <div className="flex min-h-screen bg-gradient-subtle">
@@ -140,13 +116,10 @@ const Analytics = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{stat.value}</div>
                     <div className="flex items-center text-xs">
-                      <TrendingUp className={`mr-1 h-3 w-3 ${
-                        stat.trend === "up" ? "text-success" : "text-destructive"
-                      }`} />
-                      <span className={stat.trend === "up" ? "text-success" : "text-destructive"}>
+                      <TrendingUp className={`mr-1 h-3 w-3 text-muted-foreground`} />
+                      <span className="text-muted-foreground">
                         {stat.change}
                       </span>
-                      <span className="text-muted-foreground ml-1">from last period</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -155,65 +128,76 @@ const Analytics = () => {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Top Performing Posts */}
+            {/* Recent Posts */}
             <Card className="shadow-elegant border-0">
               <CardHeader>
-                <CardTitle>Top Performing Posts</CardTitle>
-                <CardDescription>Based on views and engagement in the last {timeRange}</CardDescription>
+                <CardTitle>Recent Published Posts</CardTitle>
+                <CardDescription>Your latest published content</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {topPosts.map((post, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm mb-1">{post.title}</h4>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{post.site}</span>
-                          <span>•</span>
-                          <span>{post.publishedAt}</span>
+                {recentPublished.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No published posts yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentPublished.map((post, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm mb-1">{post.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{post.site}</span>
+                            <span>•</span>
+                            <span>{post.publishedAt}</span>
+                          </div>
                         </div>
+                        <Badge variant="outline">{post.category}</Badge>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">{post.views.toLocaleString()} views</div>
-                        <div className="text-xs text-success">{post.engagement} engagement</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Site Performance */}
             <Card className="shadow-elegant border-0">
               <CardHeader>
-                <CardTitle>Site Performance</CardTitle>
-                <CardDescription>Breakdown by connected WordPress sites</CardDescription>
+                <CardTitle>Site Breakdown</CardTitle>
+                <CardDescription>Content distribution by site</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {sitePerformance.map((site, index) => (
-                    <div key={index} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">{site.site}</h4>
-                        <Badge variant="outline">{site.topCategory}</Badge>
+                {siteGroups.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No sites connected yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {siteGroups.map((site, index) => (
+                      <div key={index} className="p-4 border border-border rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">{site.site}</h4>
+                          <Badge variant="outline">Total: {site.posts}</Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <div className="text-lg font-semibold text-primary">{site.published}</div>
+                            <div className="text-xs text-muted-foreground">Published</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-semibold text-warning">{site.scheduled}</div>
+                            <div className="text-xs text-muted-foreground">Scheduled</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-semibold text-muted-foreground">{site.drafts}</div>
+                            <div className="text-xs text-muted-foreground">Drafts</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                          <div className="text-lg font-semibold text-primary">{site.posts}</div>
-                          <div className="text-xs text-muted-foreground">Posts</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-semibold text-primary">{site.views}</div>
-                          <div className="text-xs text-muted-foreground">Views</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-semibold text-primary">{site.avgEngagement}</div>
-                          <div className="text-xs text-muted-foreground">Engagement</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -7,55 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Eye, MoreVertical, Search, Trash2, Plus } from "lucide-react";
+import { Edit, Eye, MoreVertical, Search, Trash2, Plus, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePosts } from "@/hooks/usePosts";
 
 const Posts = () => {
   const [selectedTab, setSelectedTab] = useState("posts");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const { toast } = useToast();
-
-  const posts = [
-    {
-      id: 1,
-      title: "The Future of AI in WordPress Development",
-      site: "TechBlog.com",
-      category: "Technology",
-      status: "published",
-      publishedAt: "2024-01-15T10:30:00Z",
-      views: 2847,
-      wordCount: 1250
-    },
-    {
-      id: 2,
-      title: "10 Healthy Breakfast Ideas for Busy Mornings",
-      site: "LifestyleMag.net",
-      category: "Health",
-      status: "scheduled",
-      scheduledFor: "2024-01-20T09:00:00Z",
-      wordCount: 980
-    },
-    {
-      id: 3,
-      title: "Digital Marketing Strategies That Actually Work",
-      site: "BusinessHub.co", 
-      category: "Marketing",
-      status: "draft",
-      updatedAt: "2024-01-14T16:45:00Z",
-      wordCount: 1450
-    },
-    {
-      id: 4,
-      title: "Best WordPress Plugins for SEO in 2024",
-      site: "TechBlog.com",
-      category: "WordPress",
-      status: "published",
-      publishedAt: "2024-01-12T14:20:00Z",
-      views: 1923,
-      wordCount: 1100
-    }
-  ];
+  const { posts, loading } = usePosts();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,30 +29,37 @@ const Posts = () => {
 
   const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         (post.wordpress_sites?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (post.category_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || post.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const handleEdit = (postId: number) => {
+  const handleEdit = (postId: string) => {
     toast({
       title: "Opening Editor",
-      description: "Redirecting to post editor...",
+      description: "Post editor functionality coming soon...",
     });
   };
 
-  const handleView = (postId: number) => {
-    toast({
-      title: "Opening Post",
-      description: "Opening post in new window...",
-    });
+  const handleView = (postId: string) => {
+    const post = posts.find(p => p.id === postId);
+    if (post?.wordpress_post_id && post.wordpress_sites?.url) {
+      const postUrl = `${post.wordpress_sites.url}/?p=${post.wordpress_post_id}`;
+      window.open(postUrl, '_blank');
+    } else {
+      toast({
+        title: "Cannot Open Post",
+        description: "Post URL not available",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDelete = (postId: number) => {
+  const handleDelete = (postId: string) => {
     toast({
-      title: "Post Deleted",
-      description: "The post has been moved to trash.",
+      title: "Delete Functionality",
+      description: "Delete functionality coming soon...",
       variant: "destructive"
     });
   };
@@ -137,88 +105,114 @@ const Posts = () => {
             </Select>
           </div>
 
-          <div className="grid gap-6">
-            {filteredPosts.map((post) => (
-              <Card key={post.id} className="shadow-elegant border-0">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl mb-2">{post.title}</CardTitle>
-                    <CardDescription className="flex items-center gap-4">
-                      <span>{post.site}</span>
-                      <Badge variant="outline">{post.category}</Badge>
-                      <span>{post.wordCount} words</span>
-                      {post.views && <span>{post.views} views</span>}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Badge variant={getStatusColor(post.status)}>
-                      {post.status}
-                    </Badge>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Post Actions</DialogTitle>
-                          <DialogDescription>Choose an action for this post</DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-2">
-                          <Button 
-                            variant="outline" 
-                            className="justify-start gap-2"
-                            onClick={() => handleEdit(post.id)}
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit Post
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="justify-start gap-2"
-                            onClick={() => handleView(post.id)}
-                          >
-                            <Eye className="w-4 h-4" />
-                            View Post
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="justify-start gap-2 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(post.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Post
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">
-                    {post.status === "published" && post.publishedAt && (
-                      <span>Published on {new Date(post.publishedAt).toLocaleDateString()}</span>
-                    )}
-                    {post.status === "scheduled" && post.scheduledFor && (
-                      <span>Scheduled for {new Date(post.scheduledFor).toLocaleDateString()}</span>
-                    )}
-                    {post.status === "draft" && post.updatedAt && (
-                      <span>Last updated {new Date(post.updatedAt).toLocaleDateString()}</span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {filteredPosts.length === 0 && (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading posts...</p>
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <Card className="shadow-elegant border-0 text-center py-12">
               <CardContent>
-                <p className="text-muted-foreground">No posts found matching your search criteria.</p>
+                <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No posts found</h3>
+                <p className="text-muted-foreground">
+                  {posts.length === 0 
+                    ? "Create your first post to get started" 
+                    : "No posts match your search criteria"
+                  }
+                </p>
               </CardContent>
             </Card>
+          ) : (
+            <div className="grid gap-6">
+              {filteredPosts.map((post) => (
+                <Card key={post.id} className="shadow-elegant border-0">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl mb-2">{post.title}</CardTitle>
+                      <CardDescription>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span>{post.wordpress_sites?.name || 'Unknown Site'}</span>
+                          {post.category_name && (
+                            <Badge variant="outline">{post.category_name}</Badge>
+                          )}
+                          {post.content && (
+                            <span>{post.content.split(' ').length} words</span>
+                          )}
+                        </div>
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Badge variant={getStatusColor(post.status)}>
+                        {post.status}
+                      </Badge>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Post Actions</DialogTitle>
+                            <DialogDescription>Choose an action for this post</DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-2">
+                            <Button 
+                              variant="outline" 
+                              className="justify-start gap-2"
+                              onClick={() => handleEdit(post.id)}
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit Post
+                            </Button>
+                            {post.wordpress_post_id && (
+                              <Button 
+                                variant="outline" 
+                                className="justify-start gap-2"
+                                onClick={() => handleView(post.id)}
+                              >
+                                <Eye className="w-4 h-4" />
+                                View Post
+                              </Button>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              className="justify-start gap-2 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(post.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete Post
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground">
+                      {post.status === "published" && post.published_at && (
+                        <span>Published on {new Date(post.published_at).toLocaleDateString()}</span>
+                      )}
+                      {post.status === "scheduled" && post.scheduled_for && (
+                        <span>Scheduled for {new Date(post.scheduled_for).toLocaleDateString()}</span>
+                      )}
+                      {post.status === "draft" && (
+                        <span>Last updated {new Date(post.created_at).toLocaleDateString()}</span>
+                      )}
+                      {post.error_message && (
+                        <div className="mt-2 p-2 bg-destructive/10 rounded text-destructive text-xs">
+                          Error: {post.error_message}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
+
+          {/* Removed the redundant empty state */}
         </div>
       </main>
     </div>
