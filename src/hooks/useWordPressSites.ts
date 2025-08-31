@@ -7,7 +7,7 @@ export interface WordPressSite {
   id: string;
   name: string;
   url: string;
-  auth_type: 'app-password' | 'bearer';
+  auth_type: 'app-password' | 'bearer' | 'plugin';
   username: string;
   status: 'connected' | 'connecting' | 'error';
   last_sync: string | null;
@@ -89,17 +89,19 @@ export const useWordPressSites = () => {
   const addSite = async (siteData: {
     name: string;
     url: string;
-    authType: 'app-password' | 'bearer';
+    authType: 'app-password' | 'bearer' | 'plugin';
     username: string;
     password: string;
   }) => {
     if (!user) throw new Error('User not authenticated');
 
-    // Test connection first
-    const testResult = await testWordPressConnection(siteData.url, siteData.username, siteData.password);
-    
-    if (!testResult.success) {
-      throw new Error(`Connection test failed: ${testResult.error}`);
+    // Test connection first (skip for plugin type)
+    if (siteData.authType !== 'plugin') {
+      const testResult = await testWordPressConnection(siteData.url, siteData.username, siteData.password);
+      
+      if (!testResult.success) {
+        throw new Error(`Connection test failed: ${testResult.error}`);
+      }
     }
 
     try {
@@ -112,9 +114,9 @@ export const useWordPressSites = () => {
           auth_type: siteData.authType,
           username: siteData.username,
           password_encrypted: siteData.password, // In production, encrypt this
-          status: 'connected',
-          last_sync: new Date().toISOString(),
-          categories_count: testResult.categoriesCount || 0,
+          status: siteData.authType === 'plugin' ? 'connecting' : 'connected',
+          last_sync: siteData.authType === 'plugin' ? null : new Date().toISOString(),
+          categories_count: 0,
           posts_count: 0
         })
         .select()
@@ -129,10 +131,43 @@ export const useWordPressSites = () => {
     }
   };
 
+  const connectViaPlugin = async (siteUrl: string, apiKey: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('No valid session');
+
+      const response = await fetch(`https://sncraarjcekyfwsinvvl.supabase.co/functions/v1/wordpress-verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          site_url: siteUrl,
+          api_key: apiKey
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      await fetchSites();
+      return result;
+    } catch (error: any) {
+      throw new Error(`Failed to connect via plugin: ${error.message}`);
+    }
+  };
+
   return {
     sites,
     loading,
     addSite,
+    connectViaPlugin,
     refetch: fetchSites
   };
 };

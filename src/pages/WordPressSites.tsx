@@ -7,16 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Globe, MoreVertical, Plus, Settings, XCircle } from "lucide-react";
+import { CheckCircle, Globe, MoreVertical, Plus, Settings, XCircle, Plug } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
+import { PluginConnectionDialog } from "@/components/PluginConnectionDialog";
 
 const WordPressSites = () => {
   const [selectedTab, setSelectedTab] = useState("sites");
   const { toast } = useToast();
   const [siteUrl, setSiteUrl] = useState("");
   const [siteName, setSiteName] = useState("");
-  const [authType, setAuthType] = useState<"app-password" | "bearer">("app-password");
+  const [authType, setAuthType] = useState<"app-password" | "bearer" | "plugin">("app-password");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
@@ -79,13 +80,21 @@ const WordPressSites = () => {
               <p className="text-muted-foreground">Manage your connected WordPress installations</p>
             </div>
             
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="gradient" size="lg" className="gap-2">
-                  <Plus className="w-5 h-5" />
-                  Connect Site
+            <div className="flex gap-3">
+              <PluginConnectionDialog>
+                <Button variant="outline" size="lg" className="gap-2">
+                  <Plug className="w-5 h-5" />
+                  Connect via Plugin
                 </Button>
-              </DialogTrigger>
+              </PluginConnectionDialog>
+              
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="gradient" size="lg" className="gap-2">
+                    <Plus className="w-5 h-5" />
+                    Connect Manually
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Connect WordPress Site</DialogTitle>
@@ -116,7 +125,7 @@ const WordPressSites = () => {
                   </div>
                   <div>
                     <Label htmlFor="auth-type">Authentication Method</Label>
-                    <Select value={authType} onValueChange={(value: "app-password" | "bearer") => setAuthType(value)}>
+                    <Select value={authType} onValueChange={(value: "app-password" | "bearer" | "plugin") => setAuthType(value)}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Select authentication method" />
                       </SelectTrigger>
@@ -156,8 +165,9 @@ const WordPressSites = () => {
                     {isConnecting ? "Connecting..." : "Test Connection & Connect"}
                   </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {loading ? (
