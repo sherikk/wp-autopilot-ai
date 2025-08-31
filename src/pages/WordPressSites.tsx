@@ -8,9 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, Globe, MoreVertical, Plus, Settings, XCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const WordPressSites = () => {
   const [selectedTab, setSelectedTab] = useState("sites");
+  const { toast } = useToast();
+  const [siteUrl, setSiteUrl] = useState("");
+  const [authType, setAuthType] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [sites] = useState([
     {
       id: 1,
@@ -73,12 +79,14 @@ const WordPressSites = () => {
                     <Input 
                       id="site-url" 
                       placeholder="https://your-wordpress-site.com" 
+                      value={siteUrl}
+                      onChange={(e) => setSiteUrl(e.target.value)}
                       className="mt-1"
                     />
                   </div>
                   <div>
                     <Label htmlFor="auth-type">Authentication Method</Label>
-                    <Select>
+                    <Select value={authType} onValueChange={setAuthType}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Select authentication method" />
                       </SelectTrigger>
@@ -93,6 +101,8 @@ const WordPressSites = () => {
                     <Input 
                       id="username" 
                       placeholder="WordPress username" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       className="mt-1"
                     />
                   </div>
@@ -102,10 +112,33 @@ const WordPressSites = () => {
                       id="password" 
                       type="password" 
                       placeholder="Application password or token" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       className="mt-1"
                     />
                   </div>
-                  <Button variant="gradient" className="w-full">
+                  <Button 
+                    variant="gradient" 
+                    className="w-full"
+                    onClick={() => {
+                      if (!siteUrl || !authType || !username || !password) {
+                        toast({
+                          title: "Missing Information",
+                          description: "Please fill in all required fields.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      toast({
+                        title: "Connection Successful!",
+                        description: `Successfully connected to ${siteUrl}`,
+                      });
+                      setSiteUrl("");
+                      setAuthType("");
+                      setUsername("");
+                      setPassword("");
+                    }}
+                  >
                     Test Connection & Connect
                   </Button>
                 </div>
@@ -159,7 +192,15 @@ const WordPressSites = () => {
                     </div>
                   </div>
                   <div className="flex justify-end mt-4">
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2"
+                      onClick={() => toast({
+                        title: "Configuration",
+                        description: "Site configuration panel opened.",
+                      })}
+                    >
                       <Settings className="w-4 h-4" />
                       Configure
                     </Button>

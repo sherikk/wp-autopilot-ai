@@ -5,9 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, FileText, Globe, MoreVertical, Pause, Play, Plus, Zap } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 const Campaigns = () => {
   const [selectedTab, setSelectedTab] = useState("campaigns");
+  const { toast } = useToast();
+  const [campaignName, setCampaignName] = useState("");
+  const [selectedSite, setSelectedSite] = useState("");
+  const [globalPrompt, setGlobalPrompt] = useState("");
   const [campaigns] = useState([
     {
       id: 1,
@@ -74,10 +84,80 @@ const Campaigns = () => {
               <p className="text-muted-foreground">Manage your content automation campaigns</p>
             </div>
             
-            <Button variant="gradient" size="lg" className="gap-2">
-              <Plus className="w-5 h-5" />
-              Create Campaign
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="gradient" size="lg" className="gap-2">
+                  <Plus className="w-5 h-5" />
+                  Create Campaign
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Campaign</DialogTitle>
+                  <DialogDescription>
+                    Set up a new AI content generation campaign for your WordPress site.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="campaign-name">Campaign Name</Label>
+                    <Input 
+                      id="campaign-name"
+                      placeholder="e.g., Tech Reviews Campaign"
+                      value={campaignName}
+                      onChange={(e) => setCampaignName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="target-site">Target WordPress Site</Label>
+                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select a connected site" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="techblog">TechBlog.com</SelectItem>
+                        <SelectItem value="lifestyle">LifestyleMag.net</SelectItem>
+                        <SelectItem value="business">BusinessHub.co</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="global-prompt">Global Content Prompt</Label>
+                    <Textarea 
+                      id="global-prompt"
+                      placeholder="Write engaging blog posts about [CATEGORY] targeting [AUDIENCE]..."
+                      value={globalPrompt}
+                      onChange={(e) => setGlobalPrompt(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <Button 
+                    variant="gradient" 
+                    className="w-full"
+                    onClick={() => {
+                      if (!campaignName || !selectedSite || !globalPrompt) {
+                        toast({
+                          title: "Missing Information",
+                          description: "Please fill in all required fields.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      toast({
+                        title: "Campaign Created!",
+                        description: `"${campaignName}" has been created successfully.`,
+                      });
+                      setCampaignName("");
+                      setSelectedSite("");
+                      setGlobalPrompt("");
+                    }}
+                  >
+                    Create Campaign
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid gap-6">

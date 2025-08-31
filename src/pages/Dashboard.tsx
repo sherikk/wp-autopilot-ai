@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Calendar, Globe, Plus, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const [selectedTab, setSelectedTab] = useState("overview");
+  const { toast } = useToast();
 
   const stats = [
     { title: "Connected Sites", value: "3", change: "+1 this week", icon: Globe },
@@ -32,9 +35,11 @@ const Dashboard = () => {
               <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
               <p className="text-muted-foreground">Monitor your WordPress automation</p>
             </div>
-            <Button variant="gradient" size="lg" className="gap-2">
-              <Plus className="w-5 h-5" />
-              New Campaign
+            <Button variant="gradient" size="lg" className="gap-2" asChild>
+              <Link to="/campaigns">
+                <Plus className="w-5 h-5" />
+                New Campaign
+              </Link>
             </Button>
           </div>
 

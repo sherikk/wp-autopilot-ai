@@ -7,6 +7,11 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import WordPressSites from "./pages/WordPressSites";
 import Campaigns from "./pages/Campaigns";
+import Calendar from "./pages/Calendar";
+import Posts from "./pages/Posts";
+import Analytics from "./pages/Analytics";
+import Team from "./pages/Team";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +27,11 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/sites" element={<WordPressSites />} />
           <Route path="/campaigns" element={<Campaigns />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/posts" element={<Posts />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
