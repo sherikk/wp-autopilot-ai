@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useCampaigns } from "@/hooks/useCampaigns";
+import { useCampaigns, Campaign } from "@/hooks/useCampaigns";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
+import { CampaignEditor } from "@/components/CampaignEditor";
 
 const Campaigns = () => {
   const [selectedTab, setSelectedTab] = useState("campaigns");
@@ -21,8 +22,10 @@ const Campaigns = () => {
   const [selectedSite, setSelectedSite] = useState("");
   const [globalPrompt, setGlobalPrompt] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   
-  const { campaigns, loading: campaignsLoading, createCampaign } = useCampaigns();
+  const { campaigns, loading: campaignsLoading, createCampaign, updateCampaign, deleteCampaign } = useCampaigns();
   const { sites } = useWordPressSites();
 
   const getStatusColor = (status: string) => {
@@ -205,7 +208,14 @@ const Campaigns = () => {
                           <StatusIcon className="w-3 h-3" />
                           {campaign.status}
                         </Badge>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setEditorOpen(true);
+                          }}
+                        >
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </div>
@@ -264,6 +274,24 @@ const Campaigns = () => {
             </div>
           )}
         </div>
+
+        {/* Campaign Editor Dialog */}
+        {selectedCampaign && (
+          <CampaignEditor
+            campaign={selectedCampaign}
+            isOpen={editorOpen}
+            onClose={() => {
+              setEditorOpen(false);
+              setSelectedCampaign(null);
+            }}
+            onUpdate={async (updates) => {
+              await updateCampaign(selectedCampaign.id, updates);
+            }}
+            onDelete={async (campaignId) => {
+              await deleteCampaign(campaignId);
+            }}
+          />
+        )}
       </main>
     </div>
   );

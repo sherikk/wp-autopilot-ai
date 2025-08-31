@@ -98,10 +98,48 @@ export const useCampaigns = () => {
     }
   };
 
+  const updateCampaign = async (campaignId: string, updates: Partial<Campaign>) => {
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update(updates)
+        .eq('id', campaignId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      await fetchCampaigns();
+    } catch (error: any) {
+      throw new Error(`Failed to update campaign: ${error.message}`);
+    }
+  };
+
+  const deleteCampaign = async (campaignId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', campaignId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      await fetchCampaigns();
+    } catch (error: any) {
+      throw new Error(`Failed to delete campaign: ${error.message}`);
+    }
+  };
+
   return {
     campaigns,
     loading,
     createCampaign,
+    updateCampaign,
+    deleteCampaign,
     refetch: fetchCampaigns
   };
 };

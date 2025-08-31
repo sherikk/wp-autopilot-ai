@@ -6,47 +6,35 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, Clock, Filter, Plus } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
+import { usePosts } from "@/hooks/usePosts";
 
 const Calendar = () => {
   const [selectedTab, setSelectedTab] = useState("calendar");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
+  const { posts, loading } = usePosts();
 
-  const scheduledPosts = [
-    {
-      id: 1,
-      title: "10 Best Tech Gadgets of 2024",
-      site: "TechBlog.com",
-      category: "Reviews",
-      scheduledFor: new Date(2024, 11, 25, 10, 0),
-      status: "scheduled"
-    },
-    {
-      id: 2,
-      title: "Healthy Morning Routines",
-      site: "LifestyleMag.net", 
-      category: "Health",
-      scheduledFor: new Date(2024, 11, 25, 14, 30),
-      status: "scheduled"
-    },
-    {
-      id: 3,
-      title: "Marketing Trends for Small Business",
-      site: "BusinessHub.co",
-      category: "Marketing",
-      scheduledFor: new Date(2024, 11, 26, 9, 0),
-      status: "draft"
-    }
-  ];
+  // Get real scheduled posts from database
+  const scheduledPosts = posts
+    .filter(post => post.status === 'scheduled' && post.scheduled_for)
+    .map(post => ({
+      id: post.id,
+      title: post.title,
+      site: post.wordpress_sites?.name || 'Unknown Site',
+      category: post.category_name || 'Uncategorized',
+      scheduledFor: new Date(post.scheduled_for!),
+      status: post.status
+    }))
+    .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
 
-  const handleReschedule = (postId: number) => {
+  const handleReschedule = (postId: string) => {
     toast({
       title: "Post Rescheduled",
       description: "The post has been successfully rescheduled.",
     });
   };
 
-  const handlePublishNow = (postId: number) => {
+  const handlePublishNow = (postId: string) => {
     toast({
       title: "Publishing Post",
       description: "The post is being published now...",
@@ -88,7 +76,18 @@ const Calendar = () => {
                   <CardDescription>Posts scheduled for the next 7 days</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {scheduledPosts.map((post) => (
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Loading posts...</p>
+                    </div>
+                  ) : scheduledPosts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CalendarIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No scheduled posts</p>
+                    </div>
+                  ) : (
+                    scheduledPosts.map((post) => (
                     <div key={post.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
                       <div className="space-y-2">
                         <h3 className="font-medium">{post.title}</h3>
@@ -121,7 +120,8 @@ const Calendar = () => {
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -144,12 +144,16 @@ const Calendar = () => {
                     <h4 className="font-medium">Quick Stats</h4>
                     <div className="grid grid-cols-2 gap-3 text-center">
                       <div className="p-3 bg-accent rounded-lg">
-                        <div className="text-lg font-bold text-primary">12</div>
-                        <div className="text-xs text-muted-foreground">This Week</div>
+                        <div className="text-lg font-bold text-primary">
+                          {posts.filter(p => p.status === 'scheduled').length}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Scheduled</div>
                       </div>
                       <div className="p-3 bg-accent rounded-lg">
-                        <div className="text-lg font-bold text-warning">5</div>
-                        <div className="text-xs text-muted-foreground">Overdue</div>
+                        <div className="text-lg font-bold text-warning">
+                          {posts.filter(p => p.status === 'draft').length}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Drafts</div>
                       </div>
                     </div>
                   </div>
