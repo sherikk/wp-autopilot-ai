@@ -14,7 +14,188 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          ai_settings: Json | null
+          created_at: string
+          global_prompt: string
+          id: string
+          name: string
+          post_type: string | null
+          scheduling_config: Json | null
+          site_id: string
+          status: string
+          target_categories: Json | null
+          thumbnail_prompt: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_settings?: Json | null
+          created_at?: string
+          global_prompt: string
+          id?: string
+          name: string
+          post_type?: string | null
+          scheduling_config?: Json | null
+          site_id: string
+          status?: string
+          target_categories?: Json | null
+          thumbnail_prompt?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_settings?: Json | null
+          created_at?: string
+          global_prompt?: string
+          id?: string
+          name?: string
+          post_type?: string | null
+          scheduling_config?: Json | null
+          site_id?: string
+          status?: string
+          target_categories?: Json | null
+          thumbnail_prompt?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "wordpress_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          campaign_id: string
+          category_name: string | null
+          content: string | null
+          created_at: string
+          error_message: string | null
+          featured_image_url: string | null
+          id: string
+          published_at: string | null
+          scheduled_for: string | null
+          site_id: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+          wordpress_media_id: number | null
+          wordpress_post_id: number | null
+        }
+        Insert: {
+          campaign_id: string
+          category_name?: string | null
+          content?: string | null
+          created_at?: string
+          error_message?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          scheduled_for?: string | null
+          site_id: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+          wordpress_media_id?: number | null
+          wordpress_post_id?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          category_name?: string | null
+          content?: string | null
+          created_at?: string
+          error_message?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          scheduled_for?: string | null
+          site_id?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          wordpress_media_id?: number | null
+          wordpress_post_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "wordpress_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wordpress_sites: {
+        Row: {
+          auth_type: string
+          categories_count: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          last_sync: string | null
+          name: string
+          password_encrypted: string
+          posts_count: number | null
+          status: string
+          updated_at: string
+          url: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          auth_type: string
+          categories_count?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_sync?: string | null
+          name: string
+          password_encrypted: string
+          posts_count?: number | null
+          status?: string
+          updated_at?: string
+          url: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          auth_type?: string
+          categories_count?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_sync?: string | null
+          name?: string
+          password_encrypted?: string
+          posts_count?: number | null
+          status?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

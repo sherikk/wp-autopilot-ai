@@ -52,10 +52,10 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-4">
               <Button variant="ghost" asChild>
-                <Link to="/login">Sign In</Link>
+                <Link to="/auth">Sign In</Link>
               </Button>
               <Button variant="gradient" asChild>
-                <Link to="/dashboard">Get Started</Link>
+                <Link to="/auth">Get Started</Link>
               </Button>
             </div>
           </div>
@@ -84,7 +84,7 @@ const Index = () => {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button variant="gradient" size="lg" className="gap-2" asChild>
-                  <Link to="/dashboard">
+                  <Link to="/auth">
                     Start Free Trial
                     <ArrowRight className="w-5 h-5" />
                   </Link>
@@ -201,7 +201,7 @@ const Index = () => {
             className="gap-2 bg-white text-primary hover:bg-white/90"
             asChild
           >
-            <Link to="/dashboard">
+            <Link to="/auth">
               Get Started Now
               <ArrowRight className="w-5 h-5" />
             </Link>

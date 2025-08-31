@@ -6,23 +6,32 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, Calendar, Globe, Plus, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useWordPressSites } from "@/hooks/useWordPressSites";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { usePosts } from "@/hooks/usePosts";
 
 const Dashboard = () => {
   const [selectedTab, setSelectedTab] = useState("overview");
   const { toast } = useToast();
+  const { sites } = useWordPressSites();
+  const { campaigns } = useCampaigns();
+  const { posts } = usePosts();
 
+  // Calculate real stats from data
   const stats = [
-    { title: "Connected Sites", value: "3", change: "+1 this week", icon: Globe },
-    { title: "Active Campaigns", value: "12", change: "+2 this month", icon: Zap },
-    { title: "Posts Scheduled", value: "47", change: "Next 7 days", icon: Calendar },
+    { title: "Connected Sites", value: sites.length.toString(), change: "+1 this week", icon: Globe },
+    { title: "Active Campaigns", value: campaigns.filter(c => c.status === 'active').length.toString(), change: "+2 this month", icon: Zap },
+    { title: "Posts Scheduled", value: posts.filter(p => p.status === 'scheduled').length.toString(), change: "Next 7 days", icon: Calendar },
     { title: "Success Rate", value: "98.2%", change: "+0.3% this week", icon: BarChart3 },
   ];
 
-  const recentActivity = [
-    { site: "TechBlog.com", action: "Published 3 posts", status: "success", time: "2 hours ago" },
-    { site: "LifestyleMag.net", action: "Scheduled 5 posts", status: "pending", time: "4 hours ago" },
-    { site: "BusinessHub.co", action: "Generated thumbnails", status: "success", time: "6 hours ago" },
-  ];
+  // Get recent activity from posts
+  const recentActivity = posts.slice(0, 3).map(post => ({
+    site: post.wordpress_sites?.name || 'Unknown Site',
+    action: post.status === 'published' ? 'Published post' : post.status === 'scheduled' ? 'Scheduled post' : 'Generated post',
+    status: post.status === 'published' ? 'success' as const : 'pending' as const,
+    time: new Date(post.created_at).toLocaleString()
+  }));
 
   return (
     <div className="flex min-h-screen bg-gradient-subtle">

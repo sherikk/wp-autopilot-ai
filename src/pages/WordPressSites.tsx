@@ -9,43 +9,63 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, Globe, MoreVertical, Plus, Settings, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWordPressSites } from "@/hooks/useWordPressSites";
 
 const WordPressSites = () => {
   const [selectedTab, setSelectedTab] = useState("sites");
   const { toast } = useToast();
   const [siteUrl, setSiteUrl] = useState("");
-  const [authType, setAuthType] = useState("");
+  const [siteName, setSiteName] = useState("");
+  const [authType, setAuthType] = useState<"app-password" | "bearer">("app-password");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [sites] = useState([
-    {
-      id: 1,
-      name: "TechBlog.com",
-      url: "https://techblog.com",
-      status: "connected",
-      lastSync: "2 hours ago",
-      posts: 247,
-      categories: 12
-    },
-    {
-      id: 2,
-      name: "LifestyleMag.net",
-      url: "https://lifestylemag.net",
-      status: "connected",
-      lastSync: "5 minutes ago", 
-      posts: 89,
-      categories: 8
-    },
-    {
-      id: 3,
-      name: "BusinessHub.co",
-      url: "https://businesshub.co",
-      status: "error",
-      lastSync: "2 days ago",
-      posts: 156,
-      categories: 15
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
+  const { sites, loading, addSite } = useWordPressSites();
+
+  const handleConnect = async () => {
+    if (!siteUrl || !siteName || !authType || !username || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
     }
-  ]);
+
+    setIsConnecting(true);
+    try {
+      await addSite({
+        name: siteName,
+        url: siteUrl,
+        authType,
+        username,
+        password
+      });
+      
+      toast({
+        title: "Connection Successful!",
+        description: `Successfully connected to ${siteName}`,
+      });
+      
+      // Reset form
+      setSiteUrl("");
+      setSiteName("");
+      setAuthType("app-password");
+      setUsername("");
+      setPassword("");
+      setDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Connection Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gradient-subtle">
@@ -59,7 +79,7 @@ const WordPressSites = () => {
               <p className="text-muted-foreground">Manage your connected WordPress installations</p>
             </div>
             
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="gradient" size="lg" className="gap-2">
                   <Plus className="w-5 h-5" />
@@ -75,6 +95,16 @@ const WordPressSites = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
+                    <Label htmlFor="site-name">Site Name</Label>
+                    <Input 
+                      id="site-name" 
+                      placeholder="My WordPress Site" 
+                      value={siteName}
+                      onChange={(e) => setSiteName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="site-url">Site URL</Label>
                     <Input 
                       id="site-url" 
@@ -86,7 +116,7 @@ const WordPressSites = () => {
                   </div>
                   <div>
                     <Label htmlFor="auth-type">Authentication Method</Label>
-                    <Select value={authType} onValueChange={setAuthType}>
+                    <Select value={authType} onValueChange={(value: "app-password" | "bearer") => setAuthType(value)}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Select authentication method" />
                       </SelectTrigger>
@@ -120,95 +150,99 @@ const WordPressSites = () => {
                   <Button 
                     variant="gradient" 
                     className="w-full"
-                    onClick={() => {
-                      if (!siteUrl || !authType || !username || !password) {
-                        toast({
-                          title: "Missing Information",
-                          description: "Please fill in all required fields.",
-                          variant: "destructive"
-                        });
-                        return;
-                      }
-                      toast({
-                        title: "Connection Successful!",
-                        description: `Successfully connected to ${siteUrl}`,
-                      });
-                      setSiteUrl("");
-                      setAuthType("");
-                      setUsername("");
-                      setPassword("");
-                    }}
+                    onClick={handleConnect}
+                    disabled={isConnecting}
                   >
-                    Test Connection & Connect
+                    {isConnecting ? "Connecting..." : "Test Connection & Connect"}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
 
-          <div className="grid gap-6">
-            {sites.map((site) => (
-              <Card key={site.id} className="shadow-elegant border-0">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
-                      <Globe className="w-6 h-6 text-white" />
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading sites...</p>
+            </div>
+          ) : sites.length === 0 ? (
+            <div className="text-center py-12">
+              <Globe className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No WordPress sites connected</h3>
+              <p className="text-muted-foreground mb-4">Connect your first WordPress site to get started</p>
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {sites.map((site) => (
+                <Card key={site.id} className="shadow-elegant border-0">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
+                        <Globe className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">{site.name}</CardTitle>
+                        <CardDescription>{site.url}</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-xl">{site.name}</CardTitle>
-                      <CardDescription>{site.url}</CardDescription>
+                    <div className="flex items-center space-x-3">
+                      <Badge 
+                        variant={site.status === "connected" ? "default" : "destructive"}
+                        className="gap-1"
+                      >
+                        {site.status === "connected" ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          <XCircle className="w-3 h-3" />
+                        )}
+                        {site.status}
+                      </Badge>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Badge 
-                      variant={site.status === "connected" ? "default" : "destructive"}
-                      className="gap-1"
-                    >
-                      {site.status === "connected" ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <XCircle className="w-3 h-3" />
-                      )}
-                      {site.status}
-                    </Badge>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{site.posts}</div>
-                      <div className="text-sm text-muted-foreground">Posts</div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{site.posts_count}</div>
+                        <div className="text-sm text-muted-foreground">Posts</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{site.categories_count}</div>
+                        <div className="text-sm text-muted-foreground">Categories</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-medium">Last Sync</div>
+                        <div className="text-sm text-muted-foreground">
+                          {site.last_sync ? new Date(site.last_sync).toLocaleString() : "Never"}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{site.categories}</div>
-                      <div className="text-sm text-muted-foreground">Categories</div>
+                    {site.error_message && (
+                      <div className="mt-4 p-3 bg-destructive/10 rounded-lg">
+                        <p className="text-sm text-destructive">{site.error_message}</p>
+                      </div>
+                    )}
+                    <div className="flex justify-end mt-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => toast({
+                          title: "Configuration",
+                          description: "Site configuration panel opened.",
+                        })}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Configure
+                      </Button>
                     </div>
-                    <div className="text-center">
-                      <div className="text-sm font-medium">Last Sync</div>
-                      <div className="text-sm text-muted-foreground">{site.lastSync}</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-end mt-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-2"
-                      onClick={() => toast({
-                        title: "Configuration",
-                        description: "Site configuration panel opened.",
-                      })}
-                    >
-                      <Settings className="w-4 h-4" />
-                      Configure
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
