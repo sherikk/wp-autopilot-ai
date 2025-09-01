@@ -7,6 +7,7 @@ import { addDays, addWeeks, addHours, startOfDay } from 'date-fns';
 export interface CampaignScheduleItem {
   id: string;
   campaign_id: string;
+  user_id: string;
   scheduled_for: string;
   status: 'planned' | 'created' | 'published' | 'skipped';
   post_id?: string | null;
@@ -15,10 +16,7 @@ export interface CampaignScheduleItem {
 }
 
 export interface CampaignScheduleWithDetails extends CampaignScheduleItem {
-  campaigns?: {
-    name: string;
-    global_prompt: string;
-  };
+  // Remove campaigns relationship for now since query is simplified
 }
 
 export const useCampaignSchedule = (campaignId?: string) => {
@@ -33,13 +31,8 @@ export const useCampaignSchedule = (campaignId?: string) => {
     try {
       let query = supabase
         .from('campaign_schedule')
-        .select(`
-          *,
-          campaigns (
-            name,
-            global_prompt
-          )
-        `)
+        .select('*')
+        .eq('user_id', user.id)
         .order('scheduled_for', { ascending: true });
 
       if (campaignId) {

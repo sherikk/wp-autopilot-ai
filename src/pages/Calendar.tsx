@@ -36,7 +36,7 @@ const Calendar = () => {
     .filter(schedule => schedule.status === 'planned')
     .map(schedule => ({
       id: schedule.id,
-      title: `${schedule.campaigns?.name || 'Campaign'} - Planned Post`,
+      title: `Campaign Post - Planned`,
       site: 'Campaign Generated',
       category: 'Campaign',
       scheduledFor: new Date(schedule.scheduled_for),
