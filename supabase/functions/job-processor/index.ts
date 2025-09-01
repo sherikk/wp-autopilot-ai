@@ -34,7 +34,6 @@ serve(async (req) => {
       .select('*')
       .eq('status', 'pending')
       .lte('scheduled_for', new Date().toISOString())
-      .lt('attempts', supabase.raw('max_attempts'))
       .order('created_at', { ascending: true })
       .limit(10); // Process 10 jobs at a time
 
@@ -51,10 +50,21 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing ${pendingJobs.length} jobs`);
+    // Filter jobs that haven't exceeded max attempts
+    const eligibleJobs = pendingJobs.filter(job => job.attempts < job.max_attempts);
+
+    if (eligibleJobs.length === 0) {
+      console.log('No eligible jobs found (all have exceeded max attempts)');
+      return new Response(
+        JSON.stringify({ success: true, processed: 0, message: 'No eligible jobs' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Processing ${eligibleJobs.length} jobs`);
     const results = [];
 
-    for (const job of pendingJobs as JobQueueItem[]) {
+    for (const job of eligibleJobs as JobQueueItem[]) {
       try {
         console.log(`Processing job ${job.id} of type ${job.job_type}`);
         
