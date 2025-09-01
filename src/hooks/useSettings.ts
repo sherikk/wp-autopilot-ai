@@ -99,6 +99,8 @@ export const useSettings = () => {
           user_id: user.id,
           setting_key: key,
           setting_value: value
+        }, {
+          onConflict: 'user_id,setting_key'
         });
 
       if (error) throw error;
@@ -121,7 +123,9 @@ export const useSettings = () => {
 
       const { error } = await supabase
         .from('user_settings')
-        .upsert(settingsToUpsert);
+        .upsert(settingsToUpsert, {
+          onConflict: 'user_id,setting_key'
+        });
 
       if (error) throw error;
 
