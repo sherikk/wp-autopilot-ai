@@ -115,6 +115,8 @@ export type Database = {
       campaigns: {
         Row: {
           ai_settings: Json | null
+          auto_publish_enabled: boolean | null
+          bulk_generation_enabled: boolean | null
           campaign_timezone: string | null
           created_at: string
           end_date: string | null
@@ -123,6 +125,8 @@ export type Database = {
           name: string
           post_type: string | null
           posts_per_period: number | null
+          posts_to_generate: number | null
+          publish_interval_hours: number | null
           quiet_hours_end: string | null
           quiet_hours_start: string | null
           scheduling_config: Json | null
@@ -137,6 +141,8 @@ export type Database = {
         }
         Insert: {
           ai_settings?: Json | null
+          auto_publish_enabled?: boolean | null
+          bulk_generation_enabled?: boolean | null
           campaign_timezone?: string | null
           created_at?: string
           end_date?: string | null
@@ -145,6 +151,8 @@ export type Database = {
           name: string
           post_type?: string | null
           posts_per_period?: number | null
+          posts_to_generate?: number | null
+          publish_interval_hours?: number | null
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
           scheduling_config?: Json | null
@@ -159,6 +167,8 @@ export type Database = {
         }
         Update: {
           ai_settings?: Json | null
+          auto_publish_enabled?: boolean | null
+          bulk_generation_enabled?: boolean | null
           campaign_timezone?: string | null
           created_at?: string
           end_date?: string | null
@@ -167,6 +177,8 @@ export type Database = {
           name?: string
           post_type?: string | null
           posts_per_period?: number | null
+          posts_to_generate?: number | null
+          publish_interval_hours?: number | null
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
           scheduling_config?: Json | null
@@ -478,7 +490,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auto_publish_scheduled_posts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

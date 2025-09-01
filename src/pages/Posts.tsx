@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit, Eye, MoreVertical, Search, Trash2, Plus, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts, Post } from "@/hooks/usePosts";
 import { PostEditor } from "@/components/PostEditor";
+import { PostTable } from "@/components/PostTable";
 
 const Posts = () => {
   const [selectedTab, setSelectedTab] = useState("posts");
@@ -33,22 +35,29 @@ const Posts = () => {
 
   const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (post.wordpress_sites?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (post.category_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "all" || post.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+                         post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         post.wordpress_sites?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         post.campaigns?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesFilter = filterStatus === 'all' || post.status === filterStatus
+    
+    return matchesSearch && matchesFilter
+  })
 
-  const handleEdit = (postId: string) => {
-    const post = posts.find(p => p.id === postId);
-    if (post) {
-      setEditingPost(post);
-      setIsEditorOpen(true);
-    }
+  // Group posts by status for better organization
+  const groupedPosts = {
+    scheduled: filteredPosts.filter(p => p.status === 'scheduled'),
+    published: filteredPosts.filter(p => p.status === 'published'),
+    draft: filteredPosts.filter(p => p.status === 'draft'),
+    failed: filteredPosts.filter(p => p.status === 'failed'),
+  }
+
+  const handleEdit = (post: Post) => {
+    setEditingPost(post);
+    setIsEditorOpen(true);
   };
 
-  const handleView = (postId: string) => {
-    const post = posts.find(p => p.id === postId);
+  const handleView = (post: Post) => {
     if (post?.wordpress_post_id && post.wordpress_sites?.url) {
       const postUrl = `${post.wordpress_sites.url}/?p=${post.wordpress_post_id}`;
       window.open(postUrl, '_blank');
@@ -115,136 +124,87 @@ const Posts = () => {
             </Button>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1">
               <Input
-                placeholder="Search posts, sites, categories..."
+                placeholder="Search posts by title, content, site, or campaign..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="max-w-sm"
               />
             </div>
+            
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Posts</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
+
+            <div className="flex gap-2">
+              <Badge variant="outline" className="px-3 py-1">
+                Total: {filteredPosts.length}
+              </Badge>
+              <Badge variant="secondary" className="px-3 py-1">
+                Scheduled: {groupedPosts.scheduled.length}
+              </Badge>
+              <Badge variant="default" className="px-3 py-1">
+                Published: {groupedPosts.published.length}
+              </Badge>
+            </div>
           </div>
 
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading posts...</p>
+            <div className="flex items-center justify-center h-32">
+              <div className="text-gray-500">Loading posts...</div>
             </div>
           ) : filteredPosts.length === 0 ? (
-            <Card className="shadow-elegant border-0 text-center py-12">
-              <CardContent>
-                <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No posts found</h3>
-                <p className="text-muted-foreground">
-                  {posts.length === 0 
-                    ? "Create your first post to get started" 
-                    : "No posts match your search criteria"
-                  }
-                </p>
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center h-32">
+                <p className="text-gray-500 mb-4">No posts found</p>
+                <Button onClick={handleCreate}>Create Your First Post</Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6">
-              {filteredPosts.map((post) => (
-                <Card key={post.id} className="shadow-elegant border-0">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{post.title}</CardTitle>
-                      <CardDescription className="space-y-1">
-                        <span className="flex items-center gap-4 flex-wrap">
-                          <span>{post.wordpress_sites?.name || 'Unknown Site'}</span>
-                          {post.content && (
-                            <span>{post.content.split(' ').length} words</span>
-                          )}
-                        </span>
-                        {post.category_name && (
-                          <span className="block mt-1">
-                            <Badge variant="outline">{post.category_name}</Badge>
-                          </span>
-                        )}
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Badge variant={getStatusColor(post.status)}>
-                        {post.status}
-                      </Badge>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Post Actions</DialogTitle>
-                            <DialogDescription>Choose an action for this post</DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-2">
-                            <Button 
-                              variant="outline" 
-                              className="justify-start gap-2"
-                              onClick={() => handleEdit(post.id)}
-                            >
-                              <Edit className="w-4 h-4" />
-                              Edit Post
-                            </Button>
-                            {post.wordpress_post_id && (
-                              <Button 
-                                variant="outline" 
-                                className="justify-start gap-2"
-                                onClick={() => handleView(post.id)}
-                              >
-                                <Eye className="w-4 h-4" />
-                                View Post
-                              </Button>
-                            )}
-                            <Button 
-                              variant="outline" 
-                              className="justify-start gap-2 text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDelete(post.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete Post
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">
-                      {post.status === "published" && post.published_at && (
-                        <span>Published on {new Date(post.published_at).toLocaleDateString()}</span>
-                      )}
-                      {post.status === "scheduled" && post.scheduled_for && (
-                        <span>Scheduled for {new Date(post.scheduled_for).toLocaleDateString()}</span>
-                      )}
-                      {post.status === "draft" && (
-                        <span>Last updated {new Date(post.created_at).toLocaleDateString()}</span>
-                      )}
-                      {post.error_message && (
-                        <div className="mt-2 p-2 bg-destructive/10 rounded text-destructive text-xs">
-                          Error: {post.error_message}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Tabs defaultValue="all" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="all">All Posts ({filteredPosts.length})</TabsTrigger>
+                <TabsTrigger value="scheduled">Scheduled ({groupedPosts.scheduled.length})</TabsTrigger>
+                <TabsTrigger value="published">Published ({groupedPosts.published.length})</TabsTrigger>
+                <TabsTrigger value="draft">Draft ({groupedPosts.draft.length})</TabsTrigger>
+                {groupedPosts.failed.length > 0 && (
+                  <TabsTrigger value="failed">Failed ({groupedPosts.failed.length})</TabsTrigger>
+                )}
+              </TabsList>
+
+              <TabsContent value="all">
+                <PostTable posts={filteredPosts} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
+              </TabsContent>
+              
+              <TabsContent value="scheduled">
+                <PostTable posts={groupedPosts.scheduled} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
+              </TabsContent>
+              
+              <TabsContent value="published">
+                <PostTable posts={groupedPosts.published} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
+              </TabsContent>
+              
+              <TabsContent value="draft">
+                <PostTable posts={groupedPosts.draft} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
+              </TabsContent>
+              
+              {groupedPosts.failed.length > 0 && (
+                <TabsContent value="failed">
+                  <PostTable posts={groupedPosts.failed} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
+                </TabsContent>
+              )}
+            </Tabs>
           )}
 
         </div>
