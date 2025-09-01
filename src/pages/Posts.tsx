@@ -9,14 +9,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Edit, Eye, MoreVertical, Search, Trash2, Plus, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { usePosts } from "@/hooks/usePosts";
+import { usePosts, Post } from "@/hooks/usePosts";
+import { PostEditor } from "@/components/PostEditor";
 
 const Posts = () => {
   const [selectedTab, setSelectedTab] = useState("posts");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
-  const { posts, loading } = usePosts();
+  const { posts, loading, createPost, updatePost, deletePost, publishPost } = usePosts();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -36,10 +40,11 @@ const Posts = () => {
   });
 
   const handleEdit = (postId: string) => {
-    toast({
-      title: "Opening Editor",
-      description: "Post editor functionality coming soon...",
-    });
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setEditingPost(post);
+      setIsEditorOpen(true);
+    }
   };
 
   const handleView = (postId: string) => {
@@ -56,12 +61,40 @@ const Posts = () => {
     }
   };
 
-  const handleDelete = (postId: string) => {
-    toast({
-      title: "Delete Functionality",
-      description: "Delete functionality coming soon...",
-      variant: "destructive"
-    });
+  const handleDelete = async (postId: string) => {
+    try {
+      await deletePost(postId);
+      toast({
+        title: "Post Deleted",
+        description: "The post has been successfully deleted.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreate = () => {
+    setIsCreating(true);
+    setEditingPost(null);
+    setIsEditorOpen(true);
+  };
+
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    setEditingPost(null);
+    setIsCreating(false);
+  };
+
+  const handleSave = async (postData: Partial<Post>) => {
+    if (isCreating) {
+      await createPost(postData);
+    } else if (editingPost) {
+      await updatePost(editingPost.id, postData);
+    }
   };
 
   return (
@@ -76,7 +109,7 @@ const Posts = () => {
               <p className="text-muted-foreground">Manage your published and scheduled content</p>
             </div>
             
-            <Button variant="gradient" size="lg" className="gap-2">
+            <Button variant="gradient" size="lg" className="gap-2" onClick={handleCreate}>
               <Plus className="w-5 h-5" />
               New Post
             </Button>
@@ -212,8 +245,18 @@ const Posts = () => {
             </div>
           )}
 
-          {/* Removed the redundant empty state */}
         </div>
+
+        {/* Post Editor */}
+        <PostEditor
+          post={editingPost || undefined}
+          isOpen={isEditorOpen}
+          onClose={handleCloseEditor}
+          onSave={handleSave}
+          onDelete={deletePost}
+          onPublish={publishPost}
+          isNew={isCreating}
+        />
       </main>
     </div>
   );
