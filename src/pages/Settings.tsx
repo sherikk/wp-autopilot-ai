@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,40 +12,35 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Key, Bell, Palette, Globe, CreditCard, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings, UserSettings } from "@/hooks/useSettings";
 
 const Settings = () => {
   const [selectedTab, setSelectedTab] = useState("settings");
   const { toast } = useToast();
+  const { settings, loading, updateMultipleSettings } = useSettings();
+  
+  // Local state for form inputs
+  const [localSettings, setLocalSettings] = useState<UserSettings>(settings);
 
-  const [settings, setSettings] = useState({
-    // General
-    companyName: "WP Genie",
-    timezone: "UTC-5",
-    language: "en",
-    
-    // AI & Content
-    aiProvider: "openai",
-    defaultTone: "professional",
-    defaultWordCount: "1000-1500",
-    thumbnailStyle: "modern",
-    
-    // Notifications
-    emailNotifications: true,
-    campaignUpdates: true,
-    errorAlerts: true,
-    weeklyReports: true,
-    
-    // Rate Limits
-    maxPostsPerDay: "20",
-    requestDelay: "2000",
-    maxConcurrency: "3"
-  });
+  // Update local settings when global settings change
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
 
-  const handleSave = (section: string) => {
-    toast({
-      title: "Settings Saved",
-      description: `${section} settings have been updated successfully.`,
-    });
+  const handleSave = async (section: string, sectionSettings: Partial<UserSettings>) => {
+    try {
+      await updateMultipleSettings(sectionSettings);
+      toast({
+        title: "Settings Saved",
+        description: `${section} settings have been updated successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -55,6 +50,22 @@ const Settings = () => {
       variant: "destructive"
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gradient-subtle">
+        <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
+        <main className="flex-1 p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
+              <p className="text-muted-foreground">Loading your settings...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gradient-subtle">
@@ -91,13 +102,13 @@ const Settings = () => {
                       <Label htmlFor="company">Company/Organization Name</Label>
                       <Input 
                         id="company"
-                        value={settings.companyName}
-                        onChange={(e) => setSettings({...settings, companyName: e.target.value})}
+                        value={localSettings.companyName}
+                        onChange={(e) => setLocalSettings({...localSettings, companyName: e.target.value})}
                       />
                     </div>
                     <div>
                       <Label htmlFor="timezone">Timezone</Label>
-                      <Select value={settings.timezone} onValueChange={(value) => setSettings({...settings, timezone: value})}>
+                      <Select value={localSettings.timezone} onValueChange={(value) => setLocalSettings({...localSettings, timezone: value})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -113,7 +124,7 @@ const Settings = () => {
                   </div>
                   <div>
                     <Label htmlFor="language">Language</Label>
-                    <Select value={settings.language} onValueChange={(value) => setSettings({...settings, language: value})}>
+                    <Select value={localSettings.language} onValueChange={(value) => setLocalSettings({...localSettings, language: value})}>
                       <SelectTrigger className="w-48">
                         <SelectValue />
                       </SelectTrigger>
@@ -125,7 +136,15 @@ const Settings = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={() => handleSave("General")}>Save Changes</Button>
+                  <Button 
+                    onClick={() => handleSave("General", {
+                      companyName: localSettings.companyName,
+                      timezone: localSettings.timezone,
+                      language: localSettings.language
+                    })}
+                  >
+                    Save Changes
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -143,7 +162,7 @@ const Settings = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="ai-provider">AI Provider</Label>
-                      <Select value={settings.aiProvider} onValueChange={(value) => setSettings({...settings, aiProvider: value})}>
+                      <Select value={localSettings.aiProvider} onValueChange={(value) => setLocalSettings({...localSettings, aiProvider: value})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -156,7 +175,7 @@ const Settings = () => {
                     </div>
                     <div>
                       <Label htmlFor="tone">Default Tone</Label>
-                      <Select value={settings.defaultTone} onValueChange={(value) => setSettings({...settings, defaultTone: value})}>
+                      <Select value={localSettings.defaultTone} onValueChange={(value) => setLocalSettings({...localSettings, defaultTone: value})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -172,7 +191,7 @@ const Settings = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="word-count">Default Word Count Range</Label>
-                      <Select value={settings.defaultWordCount} onValueChange={(value) => setSettings({...settings, defaultWordCount: value})}>
+                      <Select value={localSettings.defaultWordCount} onValueChange={(value) => setLocalSettings({...localSettings, defaultWordCount: value})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -185,7 +204,7 @@ const Settings = () => {
                     </div>
                     <div>
                       <Label htmlFor="thumbnail-style">Thumbnail Style</Label>
-                      <Select value={settings.thumbnailStyle} onValueChange={(value) => setSettings({...settings, thumbnailStyle: value})}>
+                      <Select value={localSettings.thumbnailStyle} onValueChange={(value) => setLocalSettings({...localSettings, thumbnailStyle: value})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -198,7 +217,16 @@ const Settings = () => {
                       </Select>
                     </div>
                   </div>
-                  <Button onClick={() => handleSave("AI & Content")}>Save Changes</Button>
+                  <Button 
+                    onClick={() => handleSave("AI & Content", {
+                      aiProvider: localSettings.aiProvider,
+                      defaultTone: localSettings.defaultTone,
+                      defaultWordCount: localSettings.defaultWordCount,
+                      thumbnailStyle: localSettings.thumbnailStyle
+                    })}
+                  >
+                    Save Changes
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -219,8 +247,8 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">Receive email updates about your account activity</p>
                     </div>
                     <Switch 
-                      checked={settings.emailNotifications}
-                      onCheckedChange={(checked) => setSettings({...settings, emailNotifications: checked})}
+                      checked={localSettings.emailNotifications}
+                      onCheckedChange={(checked) => setLocalSettings({...localSettings, emailNotifications: checked})}
                     />
                   </div>
                   <Separator />
@@ -230,8 +258,8 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">Get notified when campaigns complete or fail</p>
                     </div>
                     <Switch 
-                      checked={settings.campaignUpdates}
-                      onCheckedChange={(checked) => setSettings({...settings, campaignUpdates: checked})}
+                      checked={localSettings.campaignUpdates}
+                      onCheckedChange={(checked) => setLocalSettings({...localSettings, campaignUpdates: checked})}
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -240,8 +268,8 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">Immediate notifications for critical errors</p>
                     </div>
                     <Switch 
-                      checked={settings.errorAlerts}
-                      onCheckedChange={(checked) => setSettings({...settings, errorAlerts: checked})}
+                      checked={localSettings.errorAlerts}
+                      onCheckedChange={(checked) => setLocalSettings({...localSettings, errorAlerts: checked})}
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -250,11 +278,20 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">Summary of your weekly activity and performance</p>
                     </div>
                     <Switch 
-                      checked={settings.weeklyReports}
-                      onCheckedChange={(checked) => setSettings({...settings, weeklyReports: checked})}
+                      checked={localSettings.weeklyReports}
+                      onCheckedChange={(checked) => setLocalSettings({...localSettings, weeklyReports: checked})}
                     />
                   </div>
-                  <Button onClick={() => handleSave("Notifications")}>Save Changes</Button>
+                  <Button 
+                    onClick={() => handleSave("Notifications", {
+                      emailNotifications: localSettings.emailNotifications,
+                      campaignUpdates: localSettings.campaignUpdates,
+                      errorAlerts: localSettings.errorAlerts,
+                      weeklyReports: localSettings.weeklyReports
+                    })}
+                  >
+                    Save Changes
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -272,8 +309,8 @@ const Settings = () => {
                       <Input 
                         id="max-posts"
                         type="number"
-                        value={settings.maxPostsPerDay}
-                        onChange={(e) => setSettings({...settings, maxPostsPerDay: e.target.value})}
+                        value={localSettings.maxPostsPerDay}
+                        onChange={(e) => setLocalSettings({...localSettings, maxPostsPerDay: e.target.value})}
                       />
                       <p className="text-xs text-muted-foreground mt-1">Prevents spam and respects hosting limits</p>
                     </div>
@@ -282,8 +319,8 @@ const Settings = () => {
                       <Input 
                         id="delay"
                         type="number"
-                        value={settings.requestDelay}
-                        onChange={(e) => setSettings({...settings, requestDelay: e.target.value})}
+                        value={localSettings.requestDelay}
+                        onChange={(e) => setLocalSettings({...localSettings, requestDelay: e.target.value})}
                       />
                       <p className="text-xs text-muted-foreground mt-1">Delay between API requests</p>
                     </div>
@@ -292,13 +329,21 @@ const Settings = () => {
                       <Input 
                         id="concurrency"
                         type="number"
-                        value={settings.maxConcurrency}
-                        onChange={(e) => setSettings({...settings, maxConcurrency: e.target.value})}
+                        value={localSettings.maxConcurrency}
+                        onChange={(e) => setLocalSettings({...localSettings, maxConcurrency: e.target.value})}
                       />
                       <p className="text-xs text-muted-foreground mt-1">Parallel processing limit</p>
                     </div>
                   </div>
-                  <Button onClick={() => handleSave("Rate Limits")}>Save Changes</Button>
+                  <Button 
+                    onClick={() => handleSave("Rate Limits", {
+                      maxPostsPerDay: localSettings.maxPostsPerDay,
+                      requestDelay: localSettings.requestDelay,
+                      maxConcurrency: localSettings.maxConcurrency
+                    })}
+                  >
+                    Save Changes
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

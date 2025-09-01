@@ -114,6 +114,30 @@ Format the response as JSON with this structure:
       }
     }
 
+    // Generate thumbnail if thumbnail_prompt exists
+    let thumbnailUrl = null;
+    if (campaign.thumbnail_prompt) {
+      try {
+        console.log('Generating thumbnail with prompt:', campaign.thumbnail_prompt);
+        const thumbnailResponse = await supabase.functions.invoke('generate-thumbnail', {
+          body: { 
+            prompt: campaign.thumbnail_prompt,
+            title: contentData.title 
+          }
+        });
+
+        if (thumbnailResponse.data?.success && thumbnailResponse.data?.image) {
+          thumbnailUrl = thumbnailResponse.data.image;
+          console.log('Thumbnail generated successfully');
+        } else {
+          console.warn('Thumbnail generation failed:', thumbnailResponse.error);
+        }
+      } catch (thumbnailError) {
+        console.warn('Thumbnail generation error:', thumbnailError);
+        // Continue without thumbnail if generation fails
+      }
+    }
+
     // Create the post record
     const { data: post, error: postError } = await supabase
       .from('posts')
@@ -125,7 +149,8 @@ Format the response as JSON with this structure:
         content: contentData.content,
         tags: contentData.tags || [],
         status: 'draft',
-        category_name: campaign.target_categories?.[0] || 'uncategorized'
+        category_name: campaign.target_categories?.[0] || 'uncategorized',
+        featured_image_url: thumbnailUrl
       })
       .select()
       .single()
@@ -140,7 +165,8 @@ Format the response as JSON with this structure:
       JSON.stringify({ 
         success: true, 
         postId: post.id,
-        title: contentData.title 
+        title: contentData.title,
+        thumbnailGenerated: !!thumbnailUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
