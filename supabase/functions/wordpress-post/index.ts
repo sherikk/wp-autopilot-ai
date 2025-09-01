@@ -127,7 +127,7 @@ serve(async (req) => {
           status: post.scheduled_for ? 'future' : 'publish',
           date: post.scheduled_for || new Date().toISOString(),
           categories: post.category_name ? [1] : [], // Default category ID
-          tags: post.tags || [],
+          // Remove tags for now since WordPress expects tag IDs, not names
           featured_media: post.wordpress_media_id || null
         })
       });
