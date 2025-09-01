@@ -34,6 +34,7 @@ serve(async (req) => {
     const thumbnailPrompt = prompt || `Create a professional, eye-catching thumbnail image for a blog post titled "${title}". The image should be modern, clean, and visually appealing with vibrant colors that would work well as a featured image for a blog post.`;
 
     console.log('Generating thumbnail with prompt:', thumbnailPrompt);
+    console.log('OpenAI API Key configured:', !!openAIApiKey);
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
