@@ -9,13 +9,9 @@ export interface CampaignScheduleItem {
   campaign_id: string;
   user_id: string;
   scheduled_for: string;
-  status: 'planned' | 'queued' | 'generating' | 'created' | 'queued_publish' | 'publishing' | 'published' | 'failed_generation' | 'failed_publish' | 'skipped';
+  status: 'planned' | 'created' | 'published' | 'skipped';
   post_id?: string | null;
   title?: string | null;
-  error_code?: string | null;
-  error_message?: string | null;
-  retry_count: number;
-  timezone: string;
   created_at: string;
   updated_at: string;
 }
@@ -77,24 +73,11 @@ export const useCampaignSchedule = (campaignId?: string) => {
     endDate: Date;
     frequency: 'hourly' | 'daily' | 'weekly';
     postsPerPeriod: number;
-    timezone?: string;
   }) => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      // Get campaign details for quiet hours and timezone
-      const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .select('quiet_hours_start, quiet_hours_end, campaign_timezone, global_prompt')
-        .eq('id', campaignId)
-        .single();
-
-      if (campaignError) {
-        throw new Error(`Failed to get campaign details: ${campaignError.message}`);
-      }
-
       const scheduleItems: Omit<CampaignScheduleItem, 'id' | 'created_at' | 'updated_at'>[] = [];
-      const timezone = config.timezone || campaign.campaign_timezone || 'UTC';
       
       let currentDate = startOfDay(config.startDate);
       const endDate = startOfDay(config.endDate);
@@ -103,27 +86,18 @@ export const useCampaignSchedule = (campaignId?: string) => {
         for (let i = 0; i < config.postsPerPeriod; i++) {
           let scheduledFor = new Date(currentDate);
           
-          // Smart scheduling within business hours with unique timestamps
+          // Add offset based on post number within the period
           if (config.frequency === 'daily' && config.postsPerPeriod > 1) {
-            const businessHours = 9; // 9 AM to 6 PM = 9 hours
-            const hourSpacing = Math.max(1, Math.floor(businessHours / config.postsPerPeriod));
-            scheduledFor.setHours(9 + (i * hourSpacing), i * 15, 0, 0); // Add 15-minute intervals
+            scheduledFor.setHours(9 + (i * 3)); // Space posts 3 hours apart starting at 9 AM
           } else if (config.frequency === 'weekly' && config.postsPerPeriod > 1) {
-            scheduledFor = addDays(scheduledFor, i);
-            scheduledFor.setHours(10, i * 30, 0, 0); // Add 30-minute intervals
-          } else if (config.frequency === 'hourly') {
-            scheduledFor.setHours(scheduledFor.getHours(), i * 30, 0, 0); // 30-minute intervals for hourly
-          } else {
-            scheduledFor.setHours(10, i * 15, 0, 0); // Default with 15-minute intervals
+            scheduledFor = addDays(scheduledFor, i); // Space posts across the week
           }
 
           scheduleItems.push({
             campaign_id: campaignId,
             user_id: user.id,
             scheduled_for: scheduledFor.toISOString(),
-            status: 'planned',
-            timezone,
-            retry_count: 0
+            status: 'planned'
           });
         }
 
@@ -141,37 +115,48 @@ export const useCampaignSchedule = (campaignId?: string) => {
         }
       }
 
-      // Insert schedule items first (without titles)
-      const { data: insertedItems, error: insertError } = await supabase
+      // Get campaign details for AI title generation
+      const { data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .select('global_prompt')
+        .eq('id', campaignId)
+        .single();
+
+      if (campaignError) {
+        throw new Error(`Failed to get campaign details: ${campaignError.message}`);
+      }
+
+      // Generate AI titles for all scheduled posts
+      const { data: titleResponse, error: titleError } = await supabase.functions.invoke('generate-post-titles', {
+        body: { 
+          globalPrompt: campaign.global_prompt,
+          count: scheduleItems.length 
+        }
+      });
+
+      let generatedTitles: string[] = [];
+      if (titleError || !titleResponse?.success) {
+        console.warn('Title generation failed, using fallback titles:', titleError);
+        // Fallback to generic titles if AI generation fails
+        generatedTitles = scheduleItems.map((_, index) => `Blog Post ${index + 1}`);
+      } else {
+        generatedTitles = titleResponse.titles;
+      }
+
+      // Add titles to schedule items
+      const scheduleItemsWithTitles = scheduleItems.map((item, index) => ({
+        ...item,
+        title: generatedTitles[index] || `Blog Post ${index + 1}`
+      }));
+
+      const { error } = await supabase
         .from('campaign_schedule')
-        .insert(scheduleItems)
-        .select();
+        .insert(scheduleItemsWithTitles);
 
-      if (insertError) throw insertError;
-
-      // Queue title generation jobs for each schedule item
-      const jobPromises = insertedItems.map(item => 
-        supabase.from('job_queue').insert({
-          job_type: 'generate_titles',
-          job_data: {
-            schedule_item_id: item.id,
-            campaign_id: campaignId,
-            global_prompt: campaign.global_prompt
-          },
-          idempotency_key: `title_gen_${item.id}`
-        })
-      );
-
-      await Promise.all(jobPromises);
-
-      // Update schedule items to 'queued' status
-      await supabase
-        .from('campaign_schedule')
-        .update({ status: 'queued' })
-        .in('id', insertedItems.map(item => item.id));
+      if (error) throw error;
       
       await fetchSchedules();
-      return insertedItems.length;
+      return scheduleItemsWithTitles.length;
     } catch (error: any) {
       throw new Error(`Failed to generate schedule: ${error.message}`);
     }

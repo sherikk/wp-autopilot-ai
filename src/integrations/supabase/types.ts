@@ -18,14 +18,10 @@ export type Database = {
         Row: {
           campaign_id: string
           created_at: string
-          error_code: string | null
-          error_message: string | null
           id: string
           post_id: string | null
-          retry_count: number | null
           scheduled_for: string
           status: string
-          timezone: string | null
           title: string | null
           updated_at: string
           user_id: string
@@ -33,14 +29,10 @@ export type Database = {
         Insert: {
           campaign_id: string
           created_at?: string
-          error_code?: string | null
-          error_message?: string | null
           id?: string
           post_id?: string | null
-          retry_count?: number | null
           scheduled_for: string
           status?: string
-          timezone?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
@@ -48,14 +40,10 @@ export type Database = {
         Update: {
           campaign_id?: string
           created_at?: string
-          error_code?: string | null
-          error_message?: string | null
           id?: string
           post_id?: string | null
-          retry_count?: number | null
           scheduled_for?: string
           status?: string
-          timezone?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string
@@ -73,7 +61,6 @@ export type Database = {
       campaigns: {
         Row: {
           ai_settings: Json | null
-          campaign_timezone: string | null
           created_at: string
           end_date: string | null
           global_prompt: string
@@ -81,8 +68,6 @@ export type Database = {
           name: string
           post_type: string | null
           posts_per_period: number | null
-          quiet_hours_end: string | null
-          quiet_hours_start: string | null
           scheduling_config: Json | null
           site_id: string
           start_date: string | null
@@ -95,7 +80,6 @@ export type Database = {
         }
         Insert: {
           ai_settings?: Json | null
-          campaign_timezone?: string | null
           created_at?: string
           end_date?: string | null
           global_prompt: string
@@ -103,8 +87,6 @@ export type Database = {
           name: string
           post_type?: string | null
           posts_per_period?: number | null
-          quiet_hours_end?: string | null
-          quiet_hours_start?: string | null
           scheduling_config?: Json | null
           site_id: string
           start_date?: string | null
@@ -117,7 +99,6 @@ export type Database = {
         }
         Update: {
           ai_settings?: Json | null
-          campaign_timezone?: string | null
           created_at?: string
           end_date?: string | null
           global_prompt?: string
@@ -125,8 +106,6 @@ export type Database = {
           name?: string
           post_type?: string | null
           posts_per_period?: number | null
-          quiet_hours_end?: string | null
-          quiet_hours_start?: string | null
           scheduling_config?: Json | null
           site_id?: string
           start_date?: string | null
@@ -146,48 +125,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      job_queue: {
-        Row: {
-          attempts: number | null
-          created_at: string | null
-          error_message: string | null
-          id: string
-          idempotency_key: string | null
-          job_data: Json
-          job_type: string
-          max_attempts: number | null
-          scheduled_for: string | null
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          attempts?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          idempotency_key?: string | null
-          job_data: Json
-          job_type: string
-          max_attempts?: number | null
-          scheduled_for?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          attempts?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          idempotency_key?: string | null
-          job_data?: Json
-          job_type?: string
-          max_attempts?: number | null
-          scheduled_for?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       posts: {
         Row: {
@@ -260,50 +197,6 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "wordpress_sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      title_generations: {
-        Row: {
-          created_at: string | null
-          generation_metadata: Json | null
-          id: string
-          model_version: string | null
-          prompt_used: string | null
-          schedule_item_id: string | null
-          title: string
-          title_source: string
-          title_version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          generation_metadata?: Json | null
-          id?: string
-          model_version?: string | null
-          prompt_used?: string | null
-          schedule_item_id?: string | null
-          title: string
-          title_source?: string
-          title_version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          generation_metadata?: Json | null
-          id?: string
-          model_version?: string | null
-          prompt_used?: string | null
-          schedule_item_id?: string | null
-          title?: string
-          title_source?: string
-          title_version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "title_generations_schedule_item_id_fkey"
-            columns: ["schedule_item_id"]
-            isOneToOne: false
-            referencedRelation: "campaign_schedule"
             referencedColumns: ["id"]
           },
         ]
