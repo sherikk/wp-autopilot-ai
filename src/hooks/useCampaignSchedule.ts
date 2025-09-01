@@ -16,7 +16,10 @@ export interface CampaignScheduleItem {
 }
 
 export interface CampaignScheduleWithDetails extends CampaignScheduleItem {
-  // Remove campaigns relationship for now since query is simplified
+  campaigns?: {
+    name: string;
+    global_prompt: string;
+  };
 }
 
 export const useCampaignSchedule = (campaignId?: string) => {
@@ -31,7 +34,13 @@ export const useCampaignSchedule = (campaignId?: string) => {
     try {
       let query = supabase
         .from('campaign_schedule')
-        .select('*')
+        .select(`
+          *,
+          campaigns (
+            name,
+            global_prompt
+          )
+        `)
         .eq('user_id', user.id)
         .order('scheduled_for', { ascending: true });
 

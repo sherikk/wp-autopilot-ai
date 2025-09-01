@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Clock, Filter, Plus, Zap } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Filter, Plus, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { PostEditor } from "@/components/PostEditor";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,8 @@ const Calendar = () => {
   const [selectedTab, setSelectedTab] = useState("calendar");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isPostEditorOpen, setIsPostEditorOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const { toast } = useToast();
   const { posts, loading, createPost } = usePosts();
   const { schedules, loading: schedulesLoading } = useCampaignSchedule();
@@ -33,24 +35,48 @@ const Calendar = () => {
     }))
     .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
 
-  // Get campaign scheduled items
+  // Get campaign scheduled items with better names
   const campaignScheduledItems = schedules
     .filter(schedule => schedule.status === 'planned')
-    .map(schedule => ({
-      id: schedule.id,
-      title: `Campaign Post - Planned`,
-      site: 'Campaign Generated',
-      category: 'Campaign',
-      scheduledFor: new Date(schedule.scheduled_for),
-      status: 'planned' as const,
-      type: 'campaign' as const,
-      campaignId: schedule.campaign_id
-    }))
+    .map((schedule, index) => {
+      const campaignName = schedule.campaigns?.name || 'Campaign';
+      const postNumber = index + 1;
+      const dateStr = format(new Date(schedule.scheduled_for), "MMM dd");
+      
+      return {
+        id: schedule.id,
+        title: `${campaignName} - Post #${postNumber} (${dateStr})`,
+        site: 'Campaign Generated',
+        category: 'Campaign',
+        scheduledFor: new Date(schedule.scheduled_for),
+        status: 'planned' as const,
+        type: 'campaign' as const,
+        campaignId: schedule.campaign_id
+      };
+    })
     .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
 
   // Combine both types of scheduled content
   const allScheduledItems = [...scheduledPosts, ...campaignScheduledItems]
     .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
+
+  // Pagination logic
+  const totalPages = Math.ceil(allScheduledItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = allScheduledItems.slice(startIndex, endIndex);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const { publishPost } = usePosts();
 
@@ -148,54 +174,90 @@ const Calendar = () => {
                       <p className="text-xs text-muted-foreground mt-2">Create campaigns with schedules to see upcoming posts</p>
                     </div>
                   ) : (
-                    allScheduledItems.map((item) => (
-                    <div key={`${item.type}-${item.id}`} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium">{item.title}</h3>
-                          {item.type === 'campaign' && (
-                            <Badge variant="outline" className="text-xs bg-gradient-primary text-white border-0">
-                              <Zap className="w-3 h-3 mr-1" />
-                              AI Generated
+                    <>
+                      {paginatedItems.map((item) => (
+                        <div key={`${item.type}-${item.id}`} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{item.title}</h3>
+                              {item.type === 'campaign' && (
+                                <Badge variant="outline" className="text-xs bg-gradient-primary text-white border-0">
+                                  <Zap className="w-3 h-3 mr-1" />
+                                  AI Generated
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{item.site}</span>
+                              <Badge variant="outline" className="text-xs">{item.category}</Badge>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {format(item.scheduledFor, "MMM dd, yyyy 'at' HH:mm")}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={
+                              item.status === "scheduled" ? "default" : 
+                              item.status === "planned" ? "secondary" : 
+                              "outline"
+                            }>
+                              {item.status}
                             </Badge>
-                          )}
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleReschedule(item.id)}
+                            >
+                              Reschedule
+                            </Button>
+                            {item.type === 'post' && (
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                onClick={() => handlePublishNow(item.id)}
+                              >
+                                Publish Now
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{item.site}</span>
-                          <Badge variant="outline" className="text-xs">{item.category}</Badge>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {format(item.scheduledFor, "MMM dd, yyyy 'at' HH:mm")}
-                          </span>
+                      ))}
+                      
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="text-sm text-muted-foreground">
+                            Showing {startIndex + 1}-{Math.min(endIndex, allScheduledItems.length)} of {allScheduledItems.length} posts
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handlePrevPage}
+                              disabled={currentPage === 1}
+                              className="gap-1"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                              Previous
+                            </Button>
+                            <span className="text-sm font-medium px-3">
+                              Page {currentPage} of {totalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleNextPage}
+                              disabled={currentPage === totalPages}
+                              className="gap-1"
+                            >
+                              Next
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={
-                          item.status === "scheduled" ? "default" : 
-                          item.status === "planned" ? "secondary" : 
-                          "outline"
-                        }>
-                          {item.status}
-                        </Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleReschedule(item.id)}
-                        >
-                          Reschedule
-                        </Button>
-                        {item.type === 'post' && (
-                          <Button 
-                            variant="default" 
-                            size="sm"
-                            onClick={() => handlePublishNow(item.id)}
-                          >
-                            Publish Now
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    ))
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
