@@ -32,17 +32,25 @@ serve(async (req) => {
 
     console.log(`Generating ${count} post titles for prompt:`, globalPrompt);
 
-    // Create a prompt to generate multiple post titles
+    // Create a prompt to generate multiple post titles with better variation
     const prompt = `
 Based on this campaign theme: "${globalPrompt}"
 
-Generate exactly ${count} unique, engaging blog post titles that would work well for this campaign. Each title should be:
-- SEO-friendly (50-60 characters max)
-- Unique and compelling
-- Related to the campaign theme
-- Suitable for blog posts
+Generate exactly ${count} COMPLETELY DIFFERENT and unique blog post titles that would work well for this campaign. 
 
-Format the response as a JSON array of strings:
+IMPORTANT: Each title MUST be entirely different from the others. Use different angles, perspectives, and approaches for each title.
+
+Each title should be:
+- SEO-friendly (50-60 characters max)  
+- Completely unique (no similar wording or concepts)
+- Related to the campaign theme but from different angles
+- Suitable for blog posts
+- Use different content formats (How-to, Lists, Questions, Guides, Tips, etc.)
+
+Examples of different approaches:
+- "How to..." vs "Top 10..." vs "Why You Should..." vs "The Complete Guide to..." vs "Common Mistakes in..."
+
+Format the response as a JSON array of strings with NO duplicates:
 ["Title 1", "Title 2", "Title 3", ...]
 `;
 
