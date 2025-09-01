@@ -13,6 +13,7 @@ import { Campaign } from "@/hooks/useCampaigns";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaignSchedule } from "@/hooks/useCampaignSchedule";
+import { useJobQueue } from "@/hooks/useJobQueue";
 import { Save, Play, Pause, Trash2, Calendar as CalendarIcon, Clock, List } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export const CampaignEditor = ({
   const { sites } = useWordPressSites();
   const { toast } = useToast();
   const { schedules, generateSchedule, clearCampaignSchedule, loading: schedulesLoading } = useCampaignSchedule(campaign.id);
+  const { triggerJobProcessor } = useJobQueue('generate_titles');
 
   const handleSave = async () => {
     if (!onUpdate) return;
@@ -116,13 +118,24 @@ export const CampaignEditor = ({
         startDate,
         endDate,
         frequency: schedulingFrequency as 'hourly' | 'daily' | 'weekly',
-        postsPerPeriod
+        postsPerPeriod,
+        timezone: 'UTC'
       });
       
       toast({
         title: "Schedule Generated",
-        description: `Generated ${postsGenerated} scheduled posts.`,
+        description: `Generated ${postsGenerated} scheduled posts. Titles are being generated in the background.`,
       });
+
+      // Trigger job processor to start generating titles
+      setTimeout(async () => {
+        try {
+          await triggerJobProcessor();
+        } catch (error) {
+          console.warn('Failed to trigger job processor:', error);
+        }
+      }, 1000);
+      
     } catch (error: any) {
       toast({
         title: "Schedule Generation Failed",
@@ -433,6 +446,14 @@ export const CampaignEditor = ({
                 </Button>
                 <Button 
                   variant="outline"
+                  onClick={triggerJobProcessor}
+                  disabled={schedulesLoading}
+                  size="sm"
+                >
+                  Process Jobs
+                </Button>
+                <Button 
+                  variant="outline"
                   onClick={handleClearSchedule}
                   disabled={schedules.length === 0 || schedulesLoading}
                 >
@@ -442,19 +463,59 @@ export const CampaignEditor = ({
               
               {schedules.length > 0 && (
                 <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {schedules.length} posts scheduled
-                  </p>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-sm text-muted-foreground">
+                      {schedules.length} posts scheduled
+                    </p>
+                    <div className="flex gap-1 text-xs">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        {schedules.filter(s => s.status === 'planned').length} planned
+                      </span>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                        {schedules.filter(s => s.status === 'queued').length} queued
+                      </span>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                        {schedules.filter(s => s.status === 'generating').length} generating
+                      </span>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+                        {schedules.filter(s => s.status === 'created').length} ready
+                      </span>
+                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded">
+                        {schedules.filter(s => s.status.includes('failed')).length} failed
+                      </span>
+                    </div>
+                  </div>
                   <div className="max-h-32 overflow-y-auto space-y-1">
-                    {schedules.slice(0, 5).map((schedule, index) => (
-                      <div key={schedule.id} className="text-xs p-2 bg-accent rounded flex justify-between">
-                        <span className="flex-1 mr-2 truncate">{schedule.title || `Post #${index + 1}`}</span>
-                        <span className="text-muted-foreground">{format(new Date(schedule.scheduled_for), "MMM dd, HH:mm")}</span>
+                    {schedules.slice(0, 8).map((schedule, index) => (
+                      <div key={schedule.id} className="text-xs p-2 bg-accent rounded">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2 flex-1 mr-2">
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                              schedule.status === 'planned' ? 'bg-blue-100 text-blue-800' :
+                              schedule.status === 'queued' ? 'bg-yellow-100 text-yellow-800' :
+                              schedule.status === 'generating' ? 'bg-purple-100 text-purple-800' :
+                              schedule.status === 'created' ? 'bg-green-100 text-green-800' :
+                              schedule.status.includes('failed') ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {schedule.status}
+                            </span>
+                            <span className="truncate">{schedule.title || `Post #${index + 1}`}</span>
+                          </div>
+                          <span className="text-muted-foreground text-xs">
+                            {format(new Date(schedule.scheduled_for), "MMM dd, HH:mm")}
+                          </span>
+                        </div>
+                        {schedule.error_message && (
+                          <div className="text-red-600 text-xs mt-1 truncate" title={schedule.error_message}>
+                            Error: {schedule.error_message}
+                          </div>
+                        )}
                       </div>
                     ))}
-                    {schedules.length > 5 && (
+                    {schedules.length > 8 && (
                       <p className="text-xs text-muted-foreground text-center">
-                        ...and {schedules.length - 5} more
+                        ...and {schedules.length - 8} more
                       </p>
                     )}
                   </div>
