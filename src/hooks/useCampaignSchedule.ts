@@ -103,16 +103,18 @@ export const useCampaignSchedule = (campaignId?: string) => {
         for (let i = 0; i < config.postsPerPeriod; i++) {
           let scheduledFor = new Date(currentDate);
           
-          // Smart scheduling within business hours (9 AM - 6 PM)
+          // Smart scheduling within business hours with unique timestamps
           if (config.frequency === 'daily' && config.postsPerPeriod > 1) {
             const businessHours = 9; // 9 AM to 6 PM = 9 hours
-            const hourSpacing = Math.floor(businessHours / config.postsPerPeriod);
-            scheduledFor.setHours(9 + (i * hourSpacing));
+            const hourSpacing = Math.max(1, Math.floor(businessHours / config.postsPerPeriod));
+            scheduledFor.setHours(9 + (i * hourSpacing), i * 15, 0, 0); // Add 15-minute intervals
           } else if (config.frequency === 'weekly' && config.postsPerPeriod > 1) {
             scheduledFor = addDays(scheduledFor, i);
-            scheduledFor.setHours(10); // Default to 10 AM
+            scheduledFor.setHours(10, i * 30, 0, 0); // Add 30-minute intervals
+          } else if (config.frequency === 'hourly') {
+            scheduledFor.setHours(scheduledFor.getHours(), i * 30, 0, 0); // 30-minute intervals for hourly
           } else {
-            scheduledFor.setHours(10); // Default to 10 AM
+            scheduledFor.setHours(10, i * 15, 0, 0); // Default with 15-minute intervals
           }
 
           scheduleItems.push({
