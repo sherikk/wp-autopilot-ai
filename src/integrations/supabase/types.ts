@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_analytics: {
+        Row: {
+          avg_time_on_page: number | null
+          campaign_id: string
+          created_at: string
+          date: string
+          id: string
+          posts_created: number | null
+          posts_published: number | null
+          total_engagement: number | null
+          total_views: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_time_on_page?: number | null
+          campaign_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          posts_created?: number | null
+          posts_published?: number | null
+          total_engagement?: number | null
+          total_views?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_time_on_page?: number | null
+          campaign_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          posts_created?: number | null
+          posts_published?: number | null
+          total_engagement?: number | null
+          total_views?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_schedule: {
         Row: {
           campaign_id: string
@@ -186,6 +228,51 @@ export type Database = {
           scheduled_for?: string | null
           status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      post_analytics: {
+        Row: {
+          bounce_rate: number | null
+          clicks: number | null
+          comments: number | null
+          created_at: string
+          date: string
+          id: string
+          post_id: string
+          shares: number | null
+          time_on_page: number | null
+          updated_at: string
+          user_id: string
+          views: number | null
+        }
+        Insert: {
+          bounce_rate?: number | null
+          clicks?: number | null
+          comments?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          post_id: string
+          shares?: number | null
+          time_on_page?: number | null
+          updated_at?: string
+          user_id: string
+          views?: number | null
+        }
+        Update: {
+          bounce_rate?: number | null
+          clicks?: number | null
+          comments?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          post_id?: string
+          shares?: number | null
+          time_on_page?: number | null
+          updated_at?: string
+          user_id?: string
+          views?: number | null
         }
         Relationships: []
       }
