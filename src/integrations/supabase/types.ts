@@ -22,6 +22,7 @@ export type Database = {
           post_id: string | null
           scheduled_for: string
           status: string
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           post_id?: string | null
           scheduled_for: string
           status?: string
+          title?: string | null
           updated_at?: string
           user_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           post_id?: string | null
           scheduled_for?: string
           status?: string
+          title?: string | null
           updated_at?: string
           user_id?: string
         }

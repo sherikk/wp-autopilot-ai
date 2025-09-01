@@ -11,6 +11,7 @@ export interface CampaignScheduleItem {
   scheduled_for: string;
   status: 'planned' | 'created' | 'published' | 'skipped';
   post_id?: string | null;
+  title?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -114,14 +115,48 @@ export const useCampaignSchedule = (campaignId?: string) => {
         }
       }
 
+      // Get campaign details for AI title generation
+      const { data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .select('global_prompt')
+        .eq('id', campaignId)
+        .single();
+
+      if (campaignError) {
+        throw new Error(`Failed to get campaign details: ${campaignError.message}`);
+      }
+
+      // Generate AI titles for all scheduled posts
+      const { data: titleResponse, error: titleError } = await supabase.functions.invoke('generate-post-titles', {
+        body: { 
+          globalPrompt: campaign.global_prompt,
+          count: scheduleItems.length 
+        }
+      });
+
+      let generatedTitles: string[] = [];
+      if (titleError || !titleResponse?.success) {
+        console.warn('Title generation failed, using fallback titles:', titleError);
+        // Fallback to generic titles if AI generation fails
+        generatedTitles = scheduleItems.map((_, index) => `Blog Post ${index + 1}`);
+      } else {
+        generatedTitles = titleResponse.titles;
+      }
+
+      // Add titles to schedule items
+      const scheduleItemsWithTitles = scheduleItems.map((item, index) => ({
+        ...item,
+        title: generatedTitles[index] || `Blog Post ${index + 1}`
+      }));
+
       const { error } = await supabase
         .from('campaign_schedule')
-        .insert(scheduleItems);
+        .insert(scheduleItemsWithTitles);
 
       if (error) throw error;
       
       await fetchSchedules();
-      return scheduleItems.length;
+      return scheduleItemsWithTitles.length;
     } catch (error: any) {
       throw new Error(`Failed to generate schedule: ${error.message}`);
     }

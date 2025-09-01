@@ -35,17 +35,17 @@ const Calendar = () => {
     }))
     .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
 
-  // Get campaign scheduled items with better names
+  // Get campaign scheduled items with AI-generated titles
   const campaignScheduledItems = schedules
     .filter(schedule => schedule.status === 'planned')
     .map((schedule, index) => {
       const campaignName = schedule.campaigns?.name || 'Campaign';
-      const postNumber = index + 1;
+      const aiTitle = schedule.title || `Post ${index + 1}`;
       const dateStr = format(new Date(schedule.scheduled_for), "MMM dd");
       
       return {
         id: schedule.id,
-        title: `${campaignName} - Post #${postNumber} (${dateStr})`,
+        title: `${campaignName}: ${aiTitle}`,
         site: 'Campaign Generated',
         category: 'Campaign',
         scheduledFor: new Date(schedule.scheduled_for),
