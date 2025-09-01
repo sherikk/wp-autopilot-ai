@@ -43,12 +43,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-image-1',
+        model: 'dall-e-3',
         prompt: thumbnailPrompt,
         n: 1,
         size: '1024x1024',
-        quality: 'standard',
-        output_format: 'png'
+        quality: 'standard'
       }),
     });
 
@@ -60,17 +59,17 @@ serve(async (req) => {
 
     const data = await response.json();
     
-    if (!data.data || !data.data[0] || !data.data[0].b64_json) {
+    if (!data.data || !data.data[0]) {
       throw new Error('Invalid response from OpenAI API');
     }
 
-    const base64Image = data.data[0].b64_json;
+    const imageUrl = data.data[0].url;
     console.log('Thumbnail generated successfully');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        image: `data:image/png;base64,${base64Image}`
+        image: imageUrl
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
