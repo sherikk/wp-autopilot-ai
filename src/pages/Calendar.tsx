@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, Clock, Filter, Plus, Zap } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { PostEditor } from "@/components/PostEditor";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
 import { useCampaignSchedule } from "@/hooks/useCampaignSchedule";
@@ -13,8 +14,9 @@ import { format } from "date-fns";
 const Calendar = () => {
   const [selectedTab, setSelectedTab] = useState("calendar");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [isPostEditorOpen, setIsPostEditorOpen] = useState(false);
   const { toast } = useToast();
-  const { posts, loading } = usePosts();
+  const { posts, loading, createPost } = usePosts();
   const { schedules, loading: schedulesLoading } = useCampaignSchedule();
 
   // Get real scheduled posts from database
@@ -77,6 +79,23 @@ const Calendar = () => {
     }
   };
 
+  const handleCreatePost = async (postData: any) => {
+    try {
+      await createPost(postData);
+      toast({
+        title: "Post Created",
+        description: "Your post has been saved successfully.",
+      });
+      setIsPostEditorOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gradient-subtle">
       <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
@@ -94,7 +113,12 @@ const Calendar = () => {
                 <Filter className="w-4 h-4" />
                 Filters
               </Button>
-              <Button variant="gradient" size="lg" className="gap-2">
+              <Button 
+                variant="gradient" 
+                size="lg" 
+                className="gap-2"
+                onClick={() => setIsPostEditorOpen(true)}
+              >
                 <Plus className="w-5 h-5" />
                 Schedule Post
               </Button>
@@ -214,6 +238,13 @@ const Calendar = () => {
           </div>
         </div>
       </main>
+
+      <PostEditor
+        isOpen={isPostEditorOpen}
+        onClose={() => setIsPostEditorOpen(false)}
+        onSave={handleCreatePost}
+        isNew={true}
+      />
     </div>
   );
 };
