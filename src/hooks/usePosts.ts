@@ -171,12 +171,13 @@ export const usePosts = () => {
         .single();
 
       if (fetchError) throw fetchError;
+      if (!post) throw new Error('Post not found');
 
-      // Call WordPress publish function
+      // Call WordPress publish function with correct parameters
       const { data, error } = await supabase.functions.invoke('wordpress-post', {
         body: {
-          postId: postId,
-          action: 'publish'
+          post_id: postId,
+          site_id: post.site_id
         }
       });
 
