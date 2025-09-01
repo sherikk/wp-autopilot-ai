@@ -20,6 +20,7 @@ serve(async (req) => {
     // Get user from Authorization header
     const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '')
     if (!authHeader) {
+      console.error('No authorization header found')
       return new Response(
         JSON.stringify({ success: false, message: 'Authorization required' }),
         { 
@@ -32,6 +33,7 @@ serve(async (req) => {
     // Verify user token
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader)
     if (authError || !user) {
+      console.error('Auth error:', authError)
       return new Response(
         JSON.stringify({ success: false, message: 'Invalid authorization token' }),
         { 
@@ -41,9 +43,12 @@ serve(async (req) => {
       )
     }
 
-    const { post_id, site_id } = await req.json()
+    const requestBody = await req.json()
+    console.log('Request body:', requestBody)
+    const { post_id, site_id } = requestBody
 
     if (!post_id || !site_id) {
+      console.error('Missing required parameters:', { post_id, site_id })
       return new Response(
         JSON.stringify({ success: false, message: 'Post ID and Site ID are required' }),
         { 
