@@ -47,7 +47,7 @@ export const PostEditor = ({
     post?.scheduled_for ? new Date(post.scheduled_for) : undefined
   );
   const [selectedSiteId, setSelectedSiteId] = useState(post?.site_id || '');
-  const [selectedCampaignId, setSelectedCampaignId] = useState(post?.campaign_id || '');
+  const [selectedCampaignId, setSelectedCampaignId] = useState(post?.campaign_id || 'none');
   
   const { sites } = useWordPressSites();
   const { campaigns } = useCampaigns();
@@ -62,7 +62,7 @@ export const PostEditor = ({
       setTags(post.tags || []);
       setScheduledFor(post.scheduled_for ? new Date(post.scheduled_for) : undefined);
       setSelectedSiteId(post.site_id);
-      setSelectedCampaignId(post.campaign_id || '');
+      setSelectedCampaignId(post.campaign_id || 'none');
     }
   }, [post]);
 
@@ -96,7 +96,7 @@ export const PostEditor = ({
         tags,
         scheduled_for: scheduledFor?.toISOString() || null,
         ...(isNew && { site_id: selectedSiteId }),
-        ...(selectedCampaignId && { campaign_id: selectedCampaignId })
+        ...(selectedCampaignId && selectedCampaignId !== 'none' && { campaign_id: selectedCampaignId })
       };
 
       await onSave(postData);
@@ -341,7 +341,7 @@ export const PostEditor = ({
                     <SelectValue placeholder="Select a campaign (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Campaign</SelectItem>
+                    <SelectItem value="none">No Campaign</SelectItem>
                     {campaigns.map((campaign) => (
                       <SelectItem key={campaign.id} value={campaign.id}>
                         {campaign.name}
