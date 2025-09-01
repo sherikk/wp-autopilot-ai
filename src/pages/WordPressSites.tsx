@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Globe, MoreVertical, Plus, Settings, XCircle, Plug } from "lucide-react";
+import { CheckCircle, Globe, MoreVertical, Plus, Settings, XCircle, Plug, Trash2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
 import { PluginConnectionDialog } from "@/components/PluginConnectionDialog";
@@ -24,6 +25,31 @@ const WordPressSites = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const { sites, loading, addSite } = useWordPressSites();
+
+  const handleSiteSync = async (siteId: string, siteName: string) => {
+    toast({
+      title: "Syncing Site",
+      description: `Syncing ${siteName}...`,
+    });
+    // TODO: Implement sync functionality
+  };
+
+  const handleSiteDelete = async (siteId: string, siteName: string) => {
+    toast({
+      title: "Site Removed",
+      description: `${siteName} has been disconnected.`,
+      variant: "destructive"
+    });
+    // TODO: Implement delete functionality
+  };
+
+  const handleSiteEdit = (siteId: string, siteName: string) => {
+    toast({
+      title: "Edit Site",
+      description: `Opening settings for ${siteName}`,
+    });
+    // TODO: Implement edit functionality
+  };
 
   const handleConnect = async () => {
     if (!siteUrl || !siteName || !authType || !username || !password) {
@@ -207,9 +233,30 @@ const WordPressSites = () => {
                         )}
                         {site.status}
                       </Badge>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleSiteSync(site.id, site.name)}>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Sync Now
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSiteEdit(site.id, site.name)}>
+                            <Settings className="w-4 h-4 mr-2" />
+                            Edit Settings
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleSiteDelete(site.id, site.name)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Remove Site
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent>
