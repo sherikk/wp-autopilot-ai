@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCampaigns, Campaign } from "@/hooks/useCampaigns";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
 import { CampaignEditor } from "@/components/CampaignEditor";
+import { useCampaignScheduler } from "@/hooks/useCampaignScheduler";
 
 const Campaigns = () => {
   const [selectedTab, setSelectedTab] = useState("campaigns");
@@ -27,6 +28,7 @@ const Campaigns = () => {
   
   const { campaigns, loading: campaignsLoading, createCampaign, updateCampaign, deleteCampaign } = useCampaigns();
   const { sites } = useWordPressSites();
+  const { generateContent, runScheduler, isGenerating } = useCampaignScheduler();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -58,7 +60,18 @@ const Campaigns = () => {
               <p className="text-muted-foreground">Manage your content automation campaigns</p>
             </div>
             
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <div className="flex gap-2">
+              <Button 
+                onClick={runScheduler} 
+                variant="outline"
+                disabled={isGenerating}
+                className="gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                {isGenerating ? 'Running...' : 'Run Scheduler'}
+              </Button>
+              
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="gradient" size="lg" className="gap-2">
                   <Plus className="w-5 h-5" />
@@ -166,6 +179,7 @@ const Campaigns = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {campaignsLoading ? (
@@ -201,23 +215,40 @@ const Campaigns = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <Badge 
-                          variant={getStatusColor(campaign.status)}
-                          className="gap-1"
-                        >
-                          <StatusIcon className="w-3 h-3" />
-                          {campaign.status}
-                        </Badge>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            setSelectedCampaign(campaign);
-                            setEditorOpen(true);
-                          }}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={getStatusColor(campaign.status)}
+                            className="gap-1"
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            {campaign.status}
+                          </Badge>
+                          {campaign.scheduling_config?.enabled && (
+                            <Badge variant="secondary" className="text-xs">
+                              Auto: {campaign.scheduling_config.frequency}
+                            </Badge>
+                          )}
+                          <Button 
+                            onClick={() => generateContent(campaign.id)}
+                            disabled={isGenerating}
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                          >
+                            <Zap className="w-3 h-3" />
+                            Generate
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => {
+                              setSelectedCampaign(campaign);
+                              setEditorOpen(true);
+                            }}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">

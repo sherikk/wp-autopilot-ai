@@ -33,6 +33,8 @@ export const CampaignEditor = ({
   const [postType, setPostType] = useState(campaign.post_type);
   const [targetCategories, setTargetCategories] = useState<string[]>(campaign.target_categories);
   const [status, setStatus] = useState(campaign.status);
+  const [schedulingEnabled, setSchedulingEnabled] = useState(campaign?.scheduling_config?.enabled || false);
+  const [schedulingFrequency, setSchedulingFrequency] = useState(campaign?.scheduling_config?.frequency || 'daily');
   
   const { sites } = useWordPressSites();
   const { toast } = useToast();
@@ -47,7 +49,12 @@ export const CampaignEditor = ({
         thumbnail_prompt: thumbnailPrompt || null,
         post_type: postType,
         target_categories: targetCategories,
-        status
+        status,
+        scheduling_config: {
+          enabled: schedulingEnabled,
+          frequency: schedulingFrequency,
+          lastRun: campaign?.scheduling_config?.lastRun
+        }
       });
       
       toast({
@@ -220,6 +227,47 @@ export const CampaignEditor = ({
                   placeholder="Describe the style and content for generated thumbnails..."
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Scheduling Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Scheduling</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="scheduling-enabled"
+                  checked={schedulingEnabled}
+                  onChange={(e) => setSchedulingEnabled(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="scheduling-enabled">Enable automatic posting</Label>
+              </div>
+              
+              {schedulingEnabled && (
+                <div>
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select value={schedulingFrequency} onValueChange={(value: any) => setSchedulingFrequency(value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hourly">Every Hour</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {campaign?.scheduling_config?.lastRun && (
+                <p className="text-sm text-muted-foreground">
+                  Last run: {new Date(campaign.scheduling_config.lastRun).toLocaleString()}
+                </p>
+              )}
             </CardContent>
           </Card>
 
