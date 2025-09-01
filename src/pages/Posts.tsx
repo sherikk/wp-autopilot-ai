@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Eye, MoreVertical, Search, Trash2, Plus, FileText } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Edit, Eye, MoreVertical, Search, Trash2, Plus, FileText, Send, Clock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts, Post } from "@/hooks/usePosts";
 import { PostEditor } from "@/components/PostEditor";
@@ -21,8 +22,30 @@ const Posts = () => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState(0);
+  const [showGenerating, setShowGenerating] = useState(false);
   const { toast } = useToast();
   const { posts, loading, createPost, updatePost, deletePost, publishPost } = usePosts();
+
+  // Check for generating posts
+  useEffect(() => {
+    const generatingPosts = posts.filter(p => p.status === 'generating');
+    setShowGenerating(generatingPosts.length > 0);
+    
+    if (generatingPosts.length > 0) {
+      // Simulate progress based on the number of generating posts
+      const totalPosts = posts.length;
+      const completedPosts = totalPosts - generatingPosts.length;
+      setGeneratingProgress(Math.min((completedPosts / totalPosts) * 100, 90));
+      
+      // Auto refresh every 3 seconds when posts are generating
+      const interval = setInterval(() => {
+        window.location.reload();
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [posts]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -50,6 +73,7 @@ const Posts = () => {
     published: filteredPosts.filter(p => p.status === 'published'),
     draft: filteredPosts.filter(p => p.status === 'draft'),
     failed: filteredPosts.filter(p => p.status === 'failed'),
+    generating: filteredPosts.filter(p => p.status === 'generating'),
   }
 
   const handleEdit = (post: Post) => {
@@ -106,6 +130,38 @@ const Posts = () => {
     }
   };
 
+  const handlePublishAll = async () => {
+    const draftPosts = groupedPosts.draft;
+    if (draftPosts.length === 0) return;
+
+    const confirmMessage = `Are you sure you want to publish all ${draftPosts.length} draft posts?`;
+    if (!window.confirm(confirmMessage)) return;
+
+    toast({
+      title: "Publishing Posts",
+      description: `Starting to publish ${draftPosts.length} draft posts...`,
+    });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const post of draftPosts) {
+      try {
+        await publishPost(post.id);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        console.error(`Failed to publish post ${post.title}:`, error);
+      }
+    }
+
+    toast({
+      title: "Bulk Publish Complete",
+      description: `Successfully published ${successCount} posts${errorCount > 0 ? `, ${errorCount} failed` : ''}.`,
+      variant: errorCount > 0 ? "destructive" : "default"
+    });
+  };
+
   return (
     <div className="flex min-h-screen bg-gradient-subtle">
       <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
@@ -123,6 +179,28 @@ const Posts = () => {
               New Post
             </Button>
           </div>
+
+          {/* Progress indicator for generating posts */}
+          {showGenerating && (
+            <Card className="mb-6 border-primary/20 bg-primary/5">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-primary mb-2">Generating Posts with AI...</h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {groupedPosts.generating.length} posts are being generated with AI content and thumbnails
+                    </p>
+                    <Progress value={generatingProgress} className="w-full" />
+                  </div>
+                  <Badge variant="secondary" className="gap-1">
+                    <Clock className="w-3 h-3" />
+                    {groupedPosts.generating.length} generating
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
@@ -143,6 +221,7 @@ const Posts = () => {
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="generating">Generating</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
@@ -157,6 +236,24 @@ const Posts = () => {
               <Badge variant="default" className="px-3 py-1">
                 Published: {groupedPosts.published.length}
               </Badge>
+              {groupedPosts.generating.length > 0 && (
+                <Badge variant="secondary" className="px-3 py-1 gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Generating: {groupedPosts.generating.length}
+                </Badge>
+              )}
+              {groupedPosts.draft.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handlePublishAll}
+                  disabled={loading}
+                  className="gap-1"
+                >
+                  <Send className="w-3 h-3" />
+                  Publish All Drafts ({groupedPosts.draft.length})
+                </Button>
+              )}
             </div>
           </div>
 
@@ -178,6 +275,9 @@ const Posts = () => {
                 <TabsTrigger value="scheduled">Scheduled ({groupedPosts.scheduled.length})</TabsTrigger>
                 <TabsTrigger value="published">Published ({groupedPosts.published.length})</TabsTrigger>
                 <TabsTrigger value="draft">Draft ({groupedPosts.draft.length})</TabsTrigger>
+                {groupedPosts.generating.length > 0 && (
+                  <TabsTrigger value="generating">Generating ({groupedPosts.generating.length})</TabsTrigger>
+                )}
                 {groupedPosts.failed.length > 0 && (
                   <TabsTrigger value="failed">Failed ({groupedPosts.failed.length})</TabsTrigger>
                 )}
@@ -198,6 +298,12 @@ const Posts = () => {
               <TabsContent value="draft">
                 <PostTable posts={groupedPosts.draft} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
               </TabsContent>
+              
+              {groupedPosts.generating.length > 0 && (
+                <TabsContent value="generating">
+                  <PostTable posts={groupedPosts.generating} onEdit={handleEdit} onView={handleView} onDelete={handleDelete} />
+                </TabsContent>
+              )}
               
               {groupedPosts.failed.length > 0 && (
                 <TabsContent value="failed">

@@ -111,6 +111,15 @@ export const CampaignEditor = ({
       return;
     }
 
+    // First save the campaign with current settings
+    await handleSave();
+
+    // Show generation starting notification
+    toast({
+      title: "Generating Schedule",
+      description: "Creating posts with AI-generated content and thumbnails...",
+    });
+
     try {
       const postsGenerated = await generateSchedule(campaign.id, {
         startDate,
@@ -120,9 +129,14 @@ export const CampaignEditor = ({
       });
       
       toast({
-        title: "Schedule Generated",
-        description: `Generated ${postsGenerated} scheduled posts.`,
+        title: "Schedule Generated Successfully!",
+        description: `Generated ${postsGenerated} scheduled posts with content and thumbnails.`,
       });
+
+      // Navigate to posts page after successful generation
+      onClose();
+      window.location.href = '/posts';
+      
     } catch (error: any) {
       toast({
         title: "Schedule Generation Failed",
