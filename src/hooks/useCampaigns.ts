@@ -14,6 +14,10 @@ export interface Campaign {
   target_categories: string[];
   scheduling_config: any;
   ai_settings: any;
+  start_date?: string | null;
+  end_date?: string | null;
+  total_posts?: number;
+  posts_per_period?: number;
   created_at: string;
   wordpress_sites?: {
     name: string;

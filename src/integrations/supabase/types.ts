@@ -14,49 +14,94 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_schedule: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          post_id: string | null
+          scheduled_for: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          scheduled_for: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           ai_settings: Json | null
           created_at: string
+          end_date: string | null
           global_prompt: string
           id: string
           name: string
           post_type: string | null
+          posts_per_period: number | null
           scheduling_config: Json | null
           site_id: string
+          start_date: string | null
           status: string
           target_categories: Json | null
           thumbnail_prompt: string | null
+          total_posts: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           ai_settings?: Json | null
           created_at?: string
+          end_date?: string | null
           global_prompt: string
           id?: string
           name: string
           post_type?: string | null
+          posts_per_period?: number | null
           scheduling_config?: Json | null
           site_id: string
+          start_date?: string | null
           status?: string
           target_categories?: Json | null
           thumbnail_prompt?: string | null
+          total_posts?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           ai_settings?: Json | null
           created_at?: string
+          end_date?: string | null
           global_prompt?: string
           id?: string
           name?: string
           post_type?: string | null
+          posts_per_period?: number | null
           scheduling_config?: Json | null
           site_id?: string
+          start_date?: string | null
           status?: string
           target_categories?: Json | null
           thumbnail_prompt?: string | null
+          total_posts?: number | null
           updated_at?: string
           user_id?: string
         }

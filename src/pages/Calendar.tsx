@@ -3,16 +3,19 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Clock, Filter, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Filter, Plus, Zap } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { usePosts } from "@/hooks/usePosts";
+import { useCampaignSchedule } from "@/hooks/useCampaignSchedule";
+import { format } from "date-fns";
 
 const Calendar = () => {
   const [selectedTab, setSelectedTab] = useState("calendar");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
   const { posts, loading } = usePosts();
+  const { schedules, loading: schedulesLoading } = useCampaignSchedule();
 
   // Get real scheduled posts from database
   const scheduledPosts = posts
@@ -23,8 +26,28 @@ const Calendar = () => {
       site: post.wordpress_sites?.name || 'Unknown Site',
       category: post.category_name || 'Uncategorized',
       scheduledFor: new Date(post.scheduled_for!),
-      status: post.status
+      status: post.status,
+      type: 'post' as const
     }))
+    .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
+
+  // Get campaign scheduled items
+  const campaignScheduledItems = schedules
+    .filter(schedule => schedule.status === 'planned')
+    .map(schedule => ({
+      id: schedule.id,
+      title: `${schedule.campaigns?.name || 'Campaign'} - Planned Post`,
+      site: 'Campaign Generated',
+      category: 'Campaign',
+      scheduledFor: new Date(schedule.scheduled_for),
+      status: 'planned' as const,
+      type: 'campaign' as const,
+      campaignId: schedule.campaign_id
+    }))
+    .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
+
+  // Combine both types of scheduled content
+  const allScheduledItems = [...scheduledPosts, ...campaignScheduledItems]
     .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
 
   const { publishPost } = usePosts();
@@ -89,48 +112,63 @@ const Calendar = () => {
                   <CardDescription>Posts scheduled for the next 7 days</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {loading ? (
+                  {loading || schedulesLoading ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-                      <p className="text-sm text-muted-foreground">Loading posts...</p>
+                      <p className="text-sm text-muted-foreground">Loading scheduled content...</p>
                     </div>
-                  ) : scheduledPosts.length === 0 ? (
+                  ) : allScheduledItems.length === 0 ? (
                     <div className="text-center py-8">
                       <CalendarIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No scheduled posts</p>
+                      <p className="text-muted-foreground">No scheduled content</p>
+                      <p className="text-xs text-muted-foreground mt-2">Create campaigns with schedules to see upcoming posts</p>
                     </div>
                   ) : (
-                    scheduledPosts.map((post) => (
-                    <div key={post.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    allScheduledItems.map((item) => (
+                    <div key={`${item.type}-${item.id}`} className="flex items-center justify-between p-4 border border-border rounded-lg">
                       <div className="space-y-2">
-                        <h3 className="font-medium">{post.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{item.title}</h3>
+                          {item.type === 'campaign' && (
+                            <Badge variant="outline" className="text-xs bg-gradient-primary text-white border-0">
+                              <Zap className="w-3 h-3 mr-1" />
+                              AI Generated
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{post.site}</span>
-                          <Badge variant="outline" className="text-xs">{post.category}</Badge>
+                          <span>{item.site}</span>
+                          <Badge variant="outline" className="text-xs">{item.category}</Badge>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {post.scheduledFor.toLocaleString()}
+                            {format(item.scheduledFor, "MMM dd, yyyy 'at' HH:mm")}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={post.status === "scheduled" ? "default" : "secondary"}>
-                          {post.status}
+                        <Badge variant={
+                          item.status === "scheduled" ? "default" : 
+                          item.status === "planned" ? "secondary" : 
+                          "outline"
+                        }>
+                          {item.status}
                         </Badge>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleReschedule(post.id)}
+                          onClick={() => handleReschedule(item.id)}
                         >
                           Reschedule
                         </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={() => handlePublishNow(post.id)}
-                        >
-                          Publish Now
-                        </Button>
+                        {item.type === 'post' && (
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={() => handlePublishNow(item.id)}
+                          >
+                            Publish Now
+                          </Button>
+                        )}
                       </div>
                     </div>
                     ))
@@ -158,7 +196,7 @@ const Calendar = () => {
                     <div className="grid grid-cols-2 gap-3 text-center">
                       <div className="p-3 bg-accent rounded-lg">
                         <div className="text-lg font-bold text-primary">
-                          {posts.filter(p => p.status === 'scheduled').length}
+                          {posts.filter(p => p.status === 'scheduled').length + schedules.filter(s => s.status === 'planned').length}
                         </div>
                         <div className="text-xs text-muted-foreground">Scheduled</div>
                       </div>

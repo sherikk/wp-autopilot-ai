@@ -7,10 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Campaign } from "@/hooks/useCampaigns";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Play, Pause, Trash2 } from "lucide-react";
+import { useCampaignSchedule } from "@/hooks/useCampaignSchedule";
+import { Save, Play, Pause, Trash2, Calendar as CalendarIcon, Clock, List } from "lucide-react";
+import { format, addDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface CampaignEditorProps {
   campaign: Campaign;
@@ -36,8 +41,19 @@ export const CampaignEditor = ({
   const [schedulingEnabled, setSchedulingEnabled] = useState(campaign?.scheduling_config?.enabled || false);
   const [schedulingFrequency, setSchedulingFrequency] = useState(campaign?.scheduling_config?.frequency || 'daily');
   
+  // New duration fields
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    campaign.start_date ? new Date(campaign.start_date) : undefined
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    campaign.end_date ? new Date(campaign.end_date) : undefined
+  );
+  const [totalPosts, setTotalPosts] = useState(campaign.total_posts || 0);
+  const [postsPerPeriod, setPostsPerPeriod] = useState(campaign.posts_per_period || 1);
+  
   const { sites } = useWordPressSites();
   const { toast } = useToast();
+  const { schedules, generateSchedule, clearCampaignSchedule, loading: schedulesLoading } = useCampaignSchedule(campaign.id);
 
   const handleSave = async () => {
     if (!onUpdate) return;
@@ -50,6 +66,10 @@ export const CampaignEditor = ({
         post_type: postType,
         target_categories: targetCategories,
         status,
+        start_date: startDate?.toISOString() || null,
+        end_date: endDate?.toISOString() || null,
+        total_posts: totalPosts,
+        posts_per_period: postsPerPeriod,
         scheduling_config: {
           enabled: schedulingEnabled,
           frequency: schedulingFrequency,
@@ -69,6 +89,64 @@ export const CampaignEditor = ({
         description: error.message,
         variant: "destructive"
       });
+    }
+  };
+
+  const handleGenerateSchedule = async () => {
+    if (!startDate || !endDate) {
+      toast({
+        title: "Missing Dates",
+        description: "Please select both start and end dates.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (endDate <= startDate) {
+      toast({
+        title: "Invalid Date Range",
+        description: "End date must be after start date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const postsGenerated = await generateSchedule(campaign.id, {
+        startDate,
+        endDate,
+        frequency: schedulingFrequency as 'hourly' | 'daily' | 'weekly',
+        postsPerPeriod
+      });
+      
+      toast({
+        title: "Schedule Generated",
+        description: `Generated ${postsGenerated} scheduled posts.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Schedule Generation Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleClearSchedule = async () => {
+    if (window.confirm("Are you sure you want to clear all scheduled posts for this campaign?")) {
+      try {
+        await clearCampaignSchedule(campaign.id);
+        toast({
+          title: "Schedule Cleared",
+          description: "All scheduled posts have been removed.",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Clear Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -230,24 +308,82 @@ export const CampaignEditor = ({
             </CardContent>
           </Card>
 
-          {/* Scheduling Settings */}
+          {/* Duration Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Scheduling</CardTitle>
+              <CardTitle className="text-sm">Campaign Duration</CardTitle>
+              <CardDescription>Set the timeframe for this campaign</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="scheduling-enabled"
-                  checked={schedulingEnabled}
-                  onChange={(e) => setSchedulingEnabled(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="scheduling-enabled">Enable automatic posting</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-1",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div>
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-1",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                        disabled={(date) => startDate ? date < startDate : date < new Date()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
-              
-              {schedulingEnabled && (
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="posts-per-period">Posts per Period</Label>
+                  <Input 
+                    id="posts-per-period"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={postsPerPeriod}
+                    onChange={(e) => setPostsPerPeriod(parseInt(e.target.value) || 1)}
+                    className="mt-1"
+                  />
+                </div>
+                
                 <div>
                   <Label htmlFor="frequency">Frequency</Label>
                   <Select value={schedulingFrequency} onValueChange={(value: any) => setSchedulingFrequency(value)}>
@@ -261,8 +397,70 @@ export const CampaignEditor = ({
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="scheduling-enabled"
+                  checked={schedulingEnabled}
+                  onChange={(e) => setSchedulingEnabled(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="scheduling-enabled">Enable automatic posting</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Schedule Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <List className="w-4 h-4" />
+                Schedule Management
+              </CardTitle>
+              <CardDescription>Generate and manage your campaign schedule</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleGenerateSchedule}
+                  disabled={!startDate || !endDate || schedulesLoading}
+                  className="flex-1"
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Generate Schedule
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleClearSchedule}
+                  disabled={schedules.length === 0 || schedulesLoading}
+                >
+                  Clear Schedule
+                </Button>
+              </div>
               
+              {schedules.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {schedules.length} posts scheduled
+                  </p>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {schedules.slice(0, 5).map((schedule, index) => (
+                      <div key={schedule.id} className="text-xs p-2 bg-accent rounded flex justify-between">
+                        <span>Post #{index + 1}</span>
+                        <span>{format(new Date(schedule.scheduled_for), "MMM dd, HH:mm")}</span>
+                      </div>
+                    ))}
+                    {schedules.length > 5 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        ...and {schedules.length - 5} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {campaign?.scheduling_config?.lastRun && (
                 <p className="text-sm text-muted-foreground">
                   Last run: {new Date(campaign.scheduling_config.lastRun).toLocaleString()}
