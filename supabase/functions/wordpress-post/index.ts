@@ -104,14 +104,39 @@ serve(async (req) => {
     }
 
     // Send post to WordPress site
-    const wpResponse = await fetch(`${site.url}/wp-json/wp-genie/v1/posts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Genie-Key': site.password_encrypted // API key stored in password field
-      },
-      body: JSON.stringify(postData)
-    })
+    let wpResponse;
+    
+    if (site.auth_type === 'app-password') {
+      // Use WordPress Application Password authentication
+      const authString = btoa(`${site.username}:${site.password_encrypted}`);
+      
+      wpResponse = await fetch(`${site.url}/wp-json/wp/v2/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${authString}`
+        },
+        body: JSON.stringify({
+          title: post.title,
+          content: post.content,
+          status: post.scheduled_for ? 'future' : 'publish',
+          date: post.scheduled_for || new Date().toISOString(),
+          categories: post.category_name ? [1] : [], // Default category ID
+          tags: post.tags || [],
+          featured_media: post.wordpress_media_id || null
+        })
+      });
+    } else {
+      // Use plugin-based API (existing code for backward compatibility)
+      wpResponse = await fetch(`${site.url}/wp-json/wp-genie/v1/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Genie-Key': site.password_encrypted
+        },
+        body: JSON.stringify(postData)
+      });
+    }
 
     if (!wpResponse.ok) {
       const errorData = await wpResponse.text()
@@ -144,7 +169,7 @@ serve(async (req) => {
     const updateData: any = {
       status: 'published',
       published_at: new Date().toISOString(),
-      wordpress_post_id: wpResult.post_id,
+      wordpress_post_id: wpResult.id || wpResult.post_id,
       error_message: null,
       updated_at: new Date().toISOString()
     }
@@ -168,8 +193,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: 'Post published successfully',
-        wordpress_post_id: wpResult.post_id,
-        post_url: wpResult.post_url
+        wordpress_post_id: wpResult.id || wpResult.post_id,
+        post_url: wpResult.link || wpResult.post_url
       }),
       { 
         status: 200, 

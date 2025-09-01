@@ -27,18 +27,31 @@ const Calendar = () => {
     }))
     .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
 
+  const { publishPost } = usePosts();
+
   const handleReschedule = (postId: string) => {
+    // TODO: Implement reschedule functionality
     toast({
-      title: "Post Rescheduled",
-      description: "The post has been successfully rescheduled.",
+      title: "Feature Coming Soon",
+      description: "Post rescheduling will be available in a future update.",
+      variant: "default"
     });
   };
 
-  const handlePublishNow = (postId: string) => {
-    toast({
-      title: "Publishing Post",
-      description: "The post is being published now...",
-    });
+  const handlePublishNow = async (postId: string) => {
+    try {
+      await publishPost(postId);
+      toast({
+        title: "Publishing Post",
+        description: "The post is being published now...",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Publish Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   return (
