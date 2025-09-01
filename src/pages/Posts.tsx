@@ -163,17 +163,17 @@ const Posts = () => {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-xl mb-2">{post.title}</CardTitle>
-                        <CardDescription className="space-y-1">
-                        <div className="flex items-center gap-4 flex-wrap">
+                      <CardDescription className="space-y-1">
+                        <span className="flex items-center gap-4 flex-wrap">
                           <span>{post.wordpress_sites?.name || 'Unknown Site'}</span>
                           {post.content && (
                             <span>{post.content.split(' ').length} words</span>
                           )}
-                        </div>
+                        </span>
                         {post.category_name && (
-                          <div>
+                          <span className="block mt-1">
                             <Badge variant="outline">{post.category_name}</Badge>
-                          </div>
+                          </span>
                         )}
                       </CardDescription>
                     </div>
