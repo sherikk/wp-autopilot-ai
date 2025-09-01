@@ -448,8 +448,8 @@ export const CampaignEditor = ({
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {schedules.slice(0, 5).map((schedule, index) => (
                       <div key={schedule.id} className="text-xs p-2 bg-accent rounded flex justify-between">
-                        <span>Post #{index + 1}</span>
-                        <span>{format(new Date(schedule.scheduled_for), "MMM dd, HH:mm")}</span>
+                        <span className="flex-1 mr-2 truncate">{schedule.title || `Post #${index + 1}`}</span>
+                        <span className="text-muted-foreground">{format(new Date(schedule.scheduled_for), "MMM dd, HH:mm")}</span>
                       </div>
                     ))}
                     {schedules.length > 5 && (
