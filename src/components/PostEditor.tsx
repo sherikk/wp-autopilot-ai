@@ -14,9 +14,10 @@ import { Post } from "@/hooks/usePosts";
 import { useWordPressSites } from "@/hooks/useWordPressSites";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Trash2, CalendarIcon, Send, Eye, Globe } from "lucide-react";
+import { Save, Trash2, CalendarIcon, Send, Eye, Globe, ImageIcon, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PostEditorProps {
   post?: Post;
@@ -48,6 +49,9 @@ export const PostEditor = ({
   );
   const [selectedSiteId, setSelectedSiteId] = useState(post?.site_id || '');
   const [selectedCampaignId, setSelectedCampaignId] = useState(post?.campaign_id || 'none');
+  const [thumbnailUrl, setThumbnailUrl] = useState(post?.featured_image_url || '');
+  const [thumbnailPrompt, setThumbnailPrompt] = useState('');
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   
   const { sites } = useWordPressSites();
   const { campaigns } = useCampaigns();
@@ -63,6 +67,7 @@ export const PostEditor = ({
       setScheduledFor(post.scheduled_for ? new Date(post.scheduled_for) : undefined);
       setSelectedSiteId(post.site_id);
       setSelectedCampaignId(post.campaign_id || 'none');
+      setThumbnailUrl(post.featured_image_url || '');
     }
   }, [post]);
 
@@ -94,7 +99,7 @@ export const PostEditor = ({
         status,
         category_name: categoryName.trim() || null,
         tags,
-        scheduled_for: scheduledFor?.toISOString() || null,
+        featured_image_url: thumbnailUrl || null,
         ...(isNew && { site_id: selectedSiteId }),
         ...(selectedCampaignId && selectedCampaignId !== 'none' && { campaign_id: selectedCampaignId })
       };
@@ -168,6 +173,53 @@ export const PostEditor = ({
     if (e.key === 'Enter' && e.target === document.activeElement) {
       e.preventDefault();
       handleAddTag();
+    }
+  };
+
+  const handleGenerateThumbnail = async () => {
+    if (!title.trim() && !thumbnailPrompt.trim()) {
+      toast({
+        title: "Prompt Required",
+        description: "Please enter a title or custom thumbnail prompt.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGeneratingThumbnail(true);
+    
+    try {
+      const prompt = thumbnailPrompt.trim() || `Generate a professional thumbnail image for this blog post: "${title}"`;
+      
+      const response = await supabase.functions.invoke('generate-thumbnail', {
+        body: { 
+          prompt: thumbnailPrompt.trim() || null,
+          title: title.trim()
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to generate thumbnail');
+      }
+
+      if (response.data?.image) {
+        setThumbnailUrl(response.data.image);
+        
+        toast({
+          title: "Thumbnail Generated",
+          description: "AI thumbnail has been generated successfully!",
+        });
+      } else {
+        throw new Error('No image data received');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate thumbnail",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingThumbnail(false);
     }
   };
 
@@ -370,6 +422,72 @@ export const PostEditor = ({
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {content.split(' ').filter(word => word.length > 0).length} words
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Thumbnail */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" />
+                Thumbnail
+              </CardTitle>
+              <CardDescription>
+                Add a featured image for your post
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="thumbnail-url">Thumbnail URL</Label>
+                <Input 
+                  id="thumbnail-url"
+                  value={thumbnailUrl}
+                  onChange={(e) => setThumbnailUrl(e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter image URL or generate with AI..."
+                />
+              </div>
+
+              {thumbnailUrl && (
+                <div>
+                  <Label>Preview</Label>
+                  <div className="mt-1 border border-border rounded-lg overflow-hidden w-full max-w-xs">
+                    <img 
+                      src={thumbnailUrl} 
+                      alt="Thumbnail preview" 
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-border pt-4">
+                <Label htmlFor="thumbnail-prompt">AI Thumbnail Generation</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input 
+                    id="thumbnail-prompt"
+                    value={thumbnailPrompt}
+                    onChange={(e) => setThumbnailPrompt(e.target.value)}
+                    placeholder="Describe the thumbnail image (optional - will use post title if empty)"
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleGenerateThumbnail} 
+                    size="sm" 
+                    disabled={isGeneratingThumbnail || (!title.trim() && !thumbnailPrompt.trim())}
+                    className="gap-1 shrink-0"
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    {isGeneratingThumbnail ? 'Generating...' : 'Generate AI'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Generate a professional thumbnail using AI based on your post title or custom prompt
                 </p>
               </div>
             </CardContent>
