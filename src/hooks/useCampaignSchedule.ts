@@ -143,19 +143,71 @@ export const useCampaignSchedule = (campaignId?: string) => {
         generatedTitles = titleResponse.titles;
       }
 
-      // Add titles to schedule items
+      // Add titles to schedule items and generate posts with content and thumbnails
       const scheduleItemsWithTitles = scheduleItems.map((item, index) => ({
         ...item,
         title: generatedTitles[index] || `Blog Post ${index + 1}`
       }));
 
-      const { error } = await supabase
+      // Insert schedule items first
+      const { data: insertedSchedules, error } = await supabase
         .from('campaign_schedule')
-        .insert(scheduleItemsWithTitles);
+        .insert(scheduleItemsWithTitles)
+        .select();
 
       if (error) throw error;
+
+      // Generate full posts with content and thumbnails for each schedule item
+      const generatedPosts = [];
+      for (const scheduleItem of insertedSchedules || []) {
+        try {
+          toast({
+            title: "Generating Content",
+            description: `Creating post: ${scheduleItem.title}...`,
+          });
+
+          const { data: contentResponse, error: contentError } = await supabase.functions.invoke('generate-campaign-content', {
+            body: { 
+              campaignId: campaignId,
+              scheduleItemId: scheduleItem.id,
+              customTitle: scheduleItem.title
+            }
+          });
+
+          if (contentError || !contentResponse?.success) {
+            console.warn(`Failed to generate content for ${scheduleItem.title}:`, contentError);
+            continue;
+          }
+
+          // Update schedule item with the generated post ID
+          await supabase
+            .from('campaign_schedule')
+            .update({ 
+              post_id: contentResponse.postId,
+              status: 'created'
+            })
+            .eq('id', scheduleItem.id);
+
+          generatedPosts.push({
+            scheduleId: scheduleItem.id,
+            postId: contentResponse.postId,
+            title: scheduleItem.title
+          });
+
+        } catch (error) {
+          console.error(`Error generating post for ${scheduleItem.title}:`, error);
+        }
+      }
       
       await fetchSchedules();
+
+      if (generatedPosts.length > 0) {
+        toast({
+          title: "Posts Generated",
+          description: `Successfully created ${generatedPosts.length} posts with content and thumbnails.`,
+        });
+      }
+
       return scheduleItemsWithTitles.length;
     } catch (error: any) {
       throw new Error(`Failed to generate schedule: ${error.message}`);

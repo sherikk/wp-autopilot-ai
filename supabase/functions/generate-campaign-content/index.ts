@@ -22,7 +22,7 @@ serve(async (req) => {
   }
 
   try {
-    const { campaignId } = await req.json()
+    const { campaignId, scheduleItemId, customTitle } = await req.json()
     
     if (!campaignId) {
       throw new Error('Campaign ID is required')
@@ -108,10 +108,15 @@ Format the response as JSON with this structure:
     } catch (parseError) {
       // Fallback if JSON parsing fails
       contentData = {
-        title: `${campaign.name} - ${new Date().toLocaleDateString()}`,
+        title: customTitle || `${campaign.name} - ${new Date().toLocaleDateString()}`,
         content: generatedText,
         tags: ['blog', 'content']
       }
+    }
+
+    // Use custom title if provided (from schedule generation)
+    if (customTitle) {
+      contentData.title = customTitle;
     }
 
     // Generate thumbnail if thumbnail_prompt exists
@@ -139,19 +144,34 @@ Format the response as JSON with this structure:
     }
 
     // Create the post record
+    const postData = {
+      user_id: campaign.user_id,
+      campaign_id: campaign.id,
+      site_id: campaign.site_id,
+      title: contentData.title,
+      content: contentData.content,
+      tags: contentData.tags || [],
+      status: 'draft',
+      category_name: campaign.target_categories?.[0] || 'uncategorized',
+      featured_image_url: thumbnailUrl
+    };
+
+    // If this is from a schedule generation, set the scheduled date
+    if (scheduleItemId) {
+      const { data: scheduleItem } = await supabase
+        .from('campaign_schedule')
+        .select('scheduled_for')
+        .eq('id', scheduleItemId)
+        .single();
+        
+      if (scheduleItem) {
+        postData.scheduled_for = scheduleItem.scheduled_for;
+      }
+    }
+
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .insert({
-        user_id: campaign.user_id,
-        campaign_id: campaign.id,
-        site_id: campaign.site_id,
-        title: contentData.title,
-        content: contentData.content,
-        tags: contentData.tags || [],
-        status: 'draft',
-        category_name: campaign.target_categories?.[0] || 'uncategorized',
-        featured_image_url: thumbnailUrl
-      })
+      .insert(postData)
       .select()
       .single()
 
