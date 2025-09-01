@@ -150,11 +150,12 @@ serve(async (req) => {
       await supabase
         .from('posts')
         .update({
-          status: 'error',
+          status: 'failed',
           error_message: `WordPress API error: ${errorData}`,
           updated_at: new Date().toISOString()
         })
         .eq('id', post_id)
+        .eq('user_id', user.id)
 
       return new Response(
         JSON.stringify({ 
@@ -183,10 +184,12 @@ serve(async (req) => {
       .from('posts')
       .update(updateData)
       .eq('id', post_id)
+      .eq('user_id', user.id)
 
     if (updateError) {
+      console.error('Update error:', updateError)
       return new Response(
-        JSON.stringify({ success: false, message: 'Failed to update post status' }),
+        JSON.stringify({ success: false, message: `Failed to update post status: ${updateError.message}` }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
