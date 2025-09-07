@@ -22,7 +22,7 @@ export function Sidebar({ selectedTab, onTabChange }: SidebarProps) {
   
   const navigation = [
     { id: "overview", label: "Overview", icon: Home, path: "/dashboard" },
-    { id: "sites", label: "WordPress Sites", icon: Globe, path: "/sites" },
+    { id: "sites", label: "WordPress Sites", icon: Globe, path: "/wordpress-sites" },
     { id: "topics", label: "Topics", icon: FileText, path: "/topics" },
     { id: "campaigns", label: "Campaigns", icon: Zap, path: "/campaigns" },
     { id: "calendar", label: "Calendar", icon: Calendar, path: "/calendar" },
