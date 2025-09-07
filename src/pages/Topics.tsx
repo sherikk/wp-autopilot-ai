@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTopics } from '@/hooks/useTopics'
 import { useProjects } from '@/hooks/useProjects'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { toast } from 'sonner'
 
 const Topics = () => {
+  const navigate = useNavigate()
   const { topics, loading, createTopic, deleteTopic, generateOutline, runResearch } = useTopics()
   const { projects } = useProjects()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -312,7 +314,7 @@ const Topics = () => {
                           <Play className="mr-2 h-4 w-4" />
                           Run Pipeline
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/topics/${topic.id}`)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>

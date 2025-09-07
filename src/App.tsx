@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import WordPressSites from "./pages/WordPressSites";
 import Campaigns from "./pages/Campaigns";
 import Topics from "./pages/Topics";
+import TopicDetail from "./pages/TopicDetail";
 import Calendar from "./pages/Calendar";
 import Posts from "./pages/Posts";
 import Analytics from "./pages/Analytics";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/sites" element={<ProtectedRoute><WordPressSites /></ProtectedRoute>} />
           <Route path="/topics" element={<ProtectedRoute><Topics /></ProtectedRoute>} />
+          <Route path="/topics/:id" element={<ProtectedRoute><TopicDetail /></ProtectedRoute>} />
           <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
           <Route path="/posts" element={<ProtectedRoute><Posts /></ProtectedRoute>} />
