@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useSettings, UserSettings } from "@/hooks/useSettings";
 
 const Settings = () => {
-  const [selectedTab, setSelectedTab] = useState("settings");
   const { toast } = useToast();
   const { settings, loading, updateMultipleSettings } = useSettings();
   
@@ -53,25 +51,19 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gradient-subtle">
-        <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
-        <main className="flex-1 p-8">
+      <main className="flex-1 p-8">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
               <p className="text-muted-foreground">Loading your settings...</p>
             </div>
           </div>
-        </main>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-subtle">
-      <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      
-      <main className="flex-1 p-8">
+    <main className="flex-1 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
@@ -405,8 +397,7 @@ const Settings = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,6 @@ import {
 } from "@/components/AnalyticsCharts";
 
 const Analytics = () => {
-  const [selectedTab, setSelectedTab] = useState("analytics");
   const [timeRange, setTimeRange] = useState("30d");
   const [activeTab, setActiveTab] = useState("overview");
   
@@ -132,10 +130,7 @@ const Analytics = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-subtle">
-      <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      
-      <main className="flex-1 p-8">
+    <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -355,8 +350,7 @@ const Analytics = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

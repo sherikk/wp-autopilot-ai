@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,6 @@ import { PostEditor } from "@/components/PostEditor";
 import { PostTable } from "@/components/PostTable";
 
 const Posts = () => {
-  const [selectedTab, setSelectedTab] = useState("posts");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -163,10 +161,7 @@ const Posts = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-subtle">
-      <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      
-      <main className="flex-1 p-8">
+    <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -325,8 +320,7 @@ const Posts = () => {
           onPublish={publishPost}
           isNew={isCreating}
         />
-      </main>
-    </div>
+    </main>
   );
 };
 

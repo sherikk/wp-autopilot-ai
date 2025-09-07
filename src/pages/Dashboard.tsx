@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +10,6 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { usePosts } from "@/hooks/usePosts";
 
 const Dashboard = () => {
-  const [selectedTab, setSelectedTab] = useState("overview");
   const { toast } = useToast();
   const { sites } = useWordPressSites();
   const { campaigns } = useCampaigns();
@@ -34,10 +32,7 @@ const Dashboard = () => {
   }));
 
   return (
-    <div className="flex min-h-screen bg-gradient-subtle">
-      <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      
-      <main className="flex-1 p-8">
+    <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -100,8 +95,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

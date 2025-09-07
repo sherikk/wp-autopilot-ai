@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +14,6 @@ import { format } from "date-fns";
 import "@/styles/calendar.css";
 
 const Calendar = () => {
-  const [selectedTab, setSelectedTab] = useState("calendar");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isPostEditorOpen, setIsPostEditorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -127,10 +125,7 @@ const Calendar = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-subtle">
-      <Sidebar selectedTab={selectedTab} onTabChange={setSelectedTab} />
-      
-      <main className="flex-1 p-8">
+    <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -323,7 +318,6 @@ const Calendar = () => {
             </div>
           )}
         </div>
-      </main>
 
       <PostEditor
         isOpen={isPostEditorOpen}
@@ -331,7 +325,7 @@ const Calendar = () => {
         onSave={handleCreatePost}
         isNew={true}
       />
-    </div>
+    </main>
   );
 };
 
