@@ -9,11 +9,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Eye, FileText, Search, Wand2, Save, ExternalLink } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ArrowLeft, Eye, FileText, Search, Wand2, Save, ExternalLink, Send, ImageIcon } from 'lucide-react';
 import { useTopics } from '@/hooks/useTopics';
 import { useProjects } from '@/hooks/useProjects';
+import { useWordPressSites } from '@/hooks/useWordPressSites';
+import { useTopicPublishing } from '@/hooks/useTopicPublishing';
 import { useToast } from '@/hooks/use-toast';
+import { MediaGallery } from '@/components/MediaGallery';
+import { ContentAnalysisPanel } from '@/components/ContentAnalysisPanel';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface SourceSnippet {
   id: string;
@@ -29,10 +36,20 @@ export default function TopicDetail() {
   const { toast } = useToast();
   const { topics, updateTopic, generateOutline, runResearch } = useTopics();
   const { projects } = useProjects();
+  const { sites: wordPressSites } = useWordPressSites();
+  const { publishTopicToWordPress, publishing } = useTopicPublishing();
   
   const [sourceSnippets, setSourceSnippets] = useState<SourceSnippet[]>([]);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishOptions, setPublishOptions] = useState({
+    siteId: '',
+    status: 'publish' as 'draft' | 'publish' | 'scheduled',
+    scheduledFor: '',
+    generateFeaturedImage: true,
+    imagePrompt: ''
+  });
   
   const topic = topics.find(t => t.id === id);
   const project = projects.find(p => p.id === topic?.project_id);
@@ -129,6 +146,31 @@ export default function TopicDetail() {
       });
     } finally {
       setIsDrafting(false);
+    }
+  };
+
+  const handlePublishToWordPress = async () => {
+    if (!publishOptions.siteId) {
+      toast({
+        title: "Error",
+        description: "Please select a WordPress site",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await publishTopicToWordPress(id!, {
+        siteId: publishOptions.siteId,
+        status: publishOptions.status,
+        scheduledFor: publishOptions.scheduledFor || undefined,
+        generateFeaturedImage: publishOptions.generateFeaturedImage,
+        imagePrompt: publishOptions.imagePrompt || undefined
+      });
+      
+      setPublishDialogOpen(false);
+    } catch (error) {
+      // Error is handled in the hook
     }
   };
 
