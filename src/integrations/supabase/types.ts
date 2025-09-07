@@ -243,6 +243,36 @@ export type Database = {
         }
         Relationships: []
       }
+      media_assets: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          prompt: string
+          topic_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          prompt: string
+          topic_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          prompt?: string
+          topic_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_analytics: {
         Row: {
           bounce_rate: number | null
@@ -363,6 +393,75 @@ export type Database = {
           },
         ]
       }
+      projects: {
+        Row: {
+          brand_tone: string | null
+          created_at: string
+          default_model: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          wp_app_password_encrypted: string | null
+          wp_site_url: string | null
+          wp_user: string | null
+        }
+        Insert: {
+          brand_tone?: string | null
+          created_at?: string
+          default_model?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          wp_app_password_encrypted?: string | null
+          wp_site_url?: string | null
+          wp_user?: string | null
+        }
+        Update: {
+          brand_tone?: string | null
+          created_at?: string
+          default_model?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          wp_app_password_encrypted?: string | null
+          wp_site_url?: string | null
+          wp_user?: string | null
+        }
+        Relationships: []
+      }
+      source_snippets: {
+        Row: {
+          created_at: string
+          id: string
+          snippet: string
+          title: string
+          topic_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          snippet: string
+          title: string
+          topic_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          snippet?: string
+          title?: string
+          topic_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       title_generations: {
         Row: {
           created_at: string | null
@@ -406,6 +505,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      topics: {
+        Row: {
+          audience: string
+          created_at: string
+          draft_markdown: string | null
+          featured_image_url: string | null
+          id: string
+          length_words: number | null
+          meta_description: string | null
+          model_name: string | null
+          outline_json: Json | null
+          plagiarism_score: number | null
+          project_id: string
+          quality_score: number | null
+          scheduled_at: string | null
+          search_intent: string | null
+          seo_title: string | null
+          slug: string | null
+          source_urls: string[] | null
+          status: string
+          target_keyword: string
+          temperature: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience: string
+          created_at?: string
+          draft_markdown?: string | null
+          featured_image_url?: string | null
+          id?: string
+          length_words?: number | null
+          meta_description?: string | null
+          model_name?: string | null
+          outline_json?: Json | null
+          plagiarism_score?: number | null
+          project_id: string
+          quality_score?: number | null
+          scheduled_at?: string | null
+          search_intent?: string | null
+          seo_title?: string | null
+          slug?: string | null
+          source_urls?: string[] | null
+          status?: string
+          target_keyword: string
+          temperature?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          draft_markdown?: string | null
+          featured_image_url?: string | null
+          id?: string
+          length_words?: number | null
+          meta_description?: string | null
+          model_name?: string | null
+          outline_json?: Json | null
+          plagiarism_score?: number | null
+          project_id?: string
+          quality_score?: number | null
+          scheduled_at?: string | null
+          search_intent?: string | null
+          seo_title?: string | null
+          slug?: string | null
+          source_urls?: string[] | null
+          status?: string
+          target_keyword?: string
+          temperature?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_settings: {
         Row: {
